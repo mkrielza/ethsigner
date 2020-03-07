@@ -21,3 +21,5 @@ include 'ethsigner:signer:file-based'
 include 'ethsigner:signer:azure'
 include 'ethsigner:signer:multikey'
 include 'ethsigner:commandline'
+include 'ethsigner:signer:hsm'
+
