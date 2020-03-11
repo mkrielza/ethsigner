@@ -14,32 +14,32 @@ package tech.pegasys.ethsigner.signer.hsm;
 
 import tech.pegasys.ethsigner.core.signing.Signature;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
-
-import java.math.BigInteger;
-
-import org.web3j.crypto.Credentials;
-import org.web3j.crypto.Sign;
-import org.web3j.crypto.Sign.SignatureData;
+import java.security.KeyStore;
 
 public class HSMTransactionSigner implements TransactionSigner {
 
-  private final Credentials credentials;
+  private final HSMKeyStoreProvider provider;
+  private final String address;
 
-  public HSMTransactionSigner(final Credentials credentials) {
-    this.credentials = credentials;
+  public HSMTransactionSigner(final HSMKeyStoreProvider provider, String address) {
+    this.provider = provider;
+    this.address = address;
   }
 
   @Override
   public Signature sign(final byte[] data) {
-    final SignatureData signature = Sign.signMessage(data, credentials.getEcKeyPair());
-    return new Signature(
-        new BigInteger(signature.getV()),
-        new BigInteger(signature.getR()),
-        new BigInteger(signature.getS()));
+    KeyStore keyStore = provider.getKeyStore();
+    System.out.println(keyStore.getType());
+//    final SignatureData signature = Sign.signMessage(data, credentials.getEcKeyPair());
+//    return new Signature(
+//        new BigInteger(signature.getV()),
+//        new BigInteger(signature.getR()),
+//        new BigInteger(signature.getS()));
+    return null;
   }
 
   @Override
   public String getAddress() {
-    return credentials.getAddress();
+    return address;
   }
 }

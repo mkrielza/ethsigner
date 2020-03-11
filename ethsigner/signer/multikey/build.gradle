@@ -30,6 +30,7 @@ dependencies {
   implementation project(':ethsigner:signer:file-based')
   implementation project(':ethsigner:signer:azure')
   implementation project(':ethsigner:signer:hashicorp')
+  implementation project(':ethsigner:signer:hsm')
 
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'

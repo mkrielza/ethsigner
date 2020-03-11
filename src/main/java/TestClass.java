@@ -8,9 +8,15 @@
 //import java.security.KeyPairGenerator;
 //import java.security.KeyPair;
 //import java.security.Signature;
-import java.security.cert.X509Certificate;
+import java.io.File;
+import java.io.PrintWriter;
+import java.io.FileOutputStream;
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+//import java.security.cert.X509Certificate;
 //import java.util.Base64;
 //import java.util.Enumeration;
+import java.nio.charset.Charset;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import java.security.KeyStore;
 import java.security.Security;
@@ -24,22 +30,26 @@ import java.security.Signature;
 import java.util.Base64;
 
 public class TestClass {
-
-        public static char[] password = "us3rs3cur3".toCharArray();
+        public static String vendor = "SoftHSM";
+        public static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
+        public static String slot = "992881475";
+        public static char[] pin = "us3rs3cur3".toCharArray();
 
         public static void main(String[] args) throws Exception {
-            String configName = "/etc/softhsm/pkcs11.cfg";
+            //String configName = "/etc/softhsm/pkcs11.cfg";
+            File tmpConfigFile = File.createTempFile("pkcs11-", "conf");
+            tmpConfigFile.deleteOnExit();
+            PrintWriter configWriter = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmpConfigFile), Charset.defaultCharset())), true);
+            configWriter.println(String.format("name=%s", vendor));
+            configWriter.println(String.format("library=%s", library));
+            configWriter.println(String.format("slot=%s", slot));
+            String configName = tmpConfigFile.getAbsolutePath();
 
-            // Java 8
-//        sun.security.pkcs11.SunPKCS11 provider = new sun.security.pkcs11.SunPKCS11(configName);
-//        Security.addProvider(provider);
-//
-            // Java 11
             Provider prototype = Security.getProvider("SunPKCS11");
             Provider provider = prototype.configure(configName);
 
             KeyStore ks = KeyStore.getInstance("PKCS11", provider);
-            ks.load(null, password);
+            ks.load(null, pin);
             System.out.println("Successfully initialized");
             System.out.println("------------------------");
 

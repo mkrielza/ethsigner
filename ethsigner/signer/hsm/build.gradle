@@ -12,7 +12,7 @@
  */
 
 jar {
-    archiveBaseName = 'hsm-file-based'
+    archiveBaseName = 'ethsigner-signer-hsm'
     manifest {
         attributes(
                 'Specification-Title': archiveBaseName,

@@ -18,9 +18,11 @@ import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
 import tech.pegasys.ethsigner.signer.filebased.FileBasedSignerFactory;
 import tech.pegasys.ethsigner.signer.hashicorp.HashicorpVaultSignerFactory;
+import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 import tech.pegasys.ethsigner.signer.multikey.metadata.AzureSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.FileBasedSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.HashicorpSigningMetadataFile;
+import tech.pegasys.ethsigner.signer.multikey.metadata.HSMSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.SigningMetadataFile;
 
 import java.util.Objects;
@@ -38,12 +40,15 @@ public class MultiKeyTransactionSignerProvider
 
   private final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader;
   private final AzureKeyVaultTransactionSignerFactory azureFactory;
+  private final HSMTransactionSignerFactory hsmFactory;
 
   MultiKeyTransactionSignerProvider(
       final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader,
-      final AzureKeyVaultTransactionSignerFactory azureFactory) {
+      final AzureKeyVaultTransactionSignerFactory azureFactory,
+      final HSMTransactionSignerFactory hsmFactory) {
     this.signingMetadataTomlConfigLoader = signingMetadataTomlConfigLoader;
     this.azureFactory = azureFactory;
+    this.hsmFactory = hsmFactory;
   }
 
   @Override
@@ -87,6 +92,24 @@ public class MultiKeyTransactionSignerProvider
       signer = HashicorpVaultSignerFactory.createSigner(metadataFile.getConfig());
     } catch (final TransactionSignerInitializationException e) {
       LOG.error("Failed to construct Hashicorp signer from " + metadataFile.getBaseFilename());
+      return null;
+    }
+
+    if (filenameMatchesSigningAddress(signer, metadataFile)) {
+      LOG.info("Loaded signer for address {}", signer.getAddress());
+      return signer;
+    }
+
+    return null;
+  }
+
+  @Override
+  public TransactionSigner createSigner(final HSMSigningMetadataFile metadataFile) {
+    final TransactionSigner signer;
+    try {
+      signer = hsmFactory.createSigner(metadataFile.getConfig().getAddress());
+    } catch (final TransactionSignerInitializationException e) {
+      LOG.error("Failed to construct HSM signer from " + metadataFile.getBaseFilename());
       return null;
     }
 

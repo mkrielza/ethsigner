@@ -67,7 +67,7 @@ public class MultiKeySubCommand extends SignerSubCommand {
     final AzureKeyVaultTransactionSignerFactory azureFactory =
         new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
 
-    return new MultiKeyTransactionSignerProvider(signingMetadataTomlConfigLoader, azureFactory);
+    return new MultiKeyTransactionSignerProvider(signingMetadataTomlConfigLoader, azureFactory, null);
   }
 
   @Override
