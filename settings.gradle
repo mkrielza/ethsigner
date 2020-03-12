@@ -22,5 +22,3 @@ include 'ethsigner:signer:azure'
 include 'ethsigner:signer:hsm'
 include 'ethsigner:signer:multikey'
 include 'ethsigner:commandline'
-
-

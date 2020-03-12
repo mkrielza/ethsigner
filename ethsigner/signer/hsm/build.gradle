@@ -12,37 +12,40 @@
  */
 
 jar {
-    archiveBaseName = 'ethsigner-signer-hsm'
-    manifest {
-        attributes(
-                'Specification-Title': archiveBaseName,
-                'Specification-Version': project.version,
-                'Implementation-Title': archiveBaseName,
-                'Implementation-Version': calculateVersion()
-        )
-    }
+  archiveBaseName = 'ethsigner-signer-hsm'
+  manifest {
+    attributes(
+      'Specification-Title': archiveBaseName,
+      'Specification-Version': project.version,
+      'Implementation-Title': archiveBaseName,
+      'Implementation-Version': calculateVersion()
+      )
+  }
 }
 
 
 dependencies {
 
-    implementation project(':ethsigner:commandline')
-    implementation project(':ethsigner:signing-api')
-    implementation 'info.picocli:picocli'
-    implementation 'com.google.guava:guava'
-    implementation 'org.apache.logging.log4j:log4j-api'
-    implementation 'org.web3j:core'
+  implementation project(':ethsigner:commandline')
+  implementation project(':ethsigner:signing-api')
 
-    runtimeOnly 'org.apache.logging.log4j:log4j-core'
-    runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
+  implementation 'info.picocli:picocli'
+  implementation 'com.google.guava:guava'
+  implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.web3j:core'
+  implementation 'org.bouncycastle:bcprov-jdk15on'
+  implementation 'org.bouncycastle:bcpkix-jdk15on'
 
-    testImplementation 'org.junit.jupiter:junit-jupiter-api'
-    testImplementation 'org.assertj:assertj-core'
-    testImplementation 'org.mockito:mockito-core'
+  runtimeOnly 'org.apache.logging.log4j:log4j-core'
+  runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
 
-    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+  testImplementation 'org.junit.jupiter:junit-jupiter-api'
+  testImplementation 'org.assertj:assertj-core'
+  testImplementation 'org.mockito:mockito-core'
 
-    integrationTestImplementation 'io.rest-assured:rest-assured'
-    integrationTestImplementation 'org.assertj:assertj-core'
-    integrationTestImplementation 'org.mock-server:mockserver-netty'
+  testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+
+  integrationTestImplementation 'io.rest-assured:rest-assured'
+  integrationTestImplementation 'org.assertj:assertj-core'
+  integrationTestImplementation 'org.mock-server:mockserver-netty'
 }

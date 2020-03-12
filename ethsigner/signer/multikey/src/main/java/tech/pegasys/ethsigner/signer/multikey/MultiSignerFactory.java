@@ -15,8 +15,8 @@ package tech.pegasys.ethsigner.signer.multikey;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import tech.pegasys.ethsigner.signer.multikey.metadata.AzureSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.FileBasedSigningMetadataFile;
-import tech.pegasys.ethsigner.signer.multikey.metadata.HashicorpSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.HSMSigningMetadataFile;
+import tech.pegasys.ethsigner.signer.multikey.metadata.HashicorpSigningMetadataFile;
 
 public interface MultiSignerFactory {
 

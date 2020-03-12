@@ -14,17 +14,17 @@ package tech.pegasys.ethsigner.signer.hsm;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-import com.google.common.base.MoreObjects;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.nio.file.Files;
-
 import tech.pegasys.ethsigner.SignerSubCommand;
 import tech.pegasys.ethsigner.TransactionSignerInitializationException;
 import tech.pegasys.ethsigner.core.signing.SingleTransactionSignerProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
+import com.google.common.base.MoreObjects;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -47,35 +47,36 @@ public class HSMSubCommand extends SignerSubCommand {
   private CommandLine.Model.CommandSpec spec;
 
   @Option(
-          names = {"-l", "--library"},
-          description = "The PKCS11 library used to sign transactions.",
-          paramLabel = "<LIBRARY_PATH>",
-          required = true)
+      names = {"-l", "--library"},
+      description = "The PKCS11 library used to sign transactions.",
+      paramLabel = "<LIBRARY_PATH>",
+      required = true)
   private Path libraryPath;
 
   @Option(
-          names = {"-s", "--slot-index"},
-          description = "The slot housing private keys used to sign transactions.",
-          paramLabel = "<SLOT_INDEX>",
-          required = true)
+      names = {"-s", "--slot-index"},
+      description = "The slot housing private keys used to sign transactions.",
+      paramLabel = "<SLOT_INDEX>",
+      required = true)
   private String slotIndex;
 
   @Option(
-          names = {"-p", "--pin-path"},
-          description = "Path to a file containing the crypto user pin of the slot housing the private key used to sign transactions.",
-          paramLabel = "<PIN_PATH>",
-          required = true)
+      names = {"-p", "--pin-path"},
+      description =
+          "Path to a file containing the crypto user pin of the slot housing the private key used to sign transactions.",
+      paramLabel = "<PIN_PATH>",
+      required = true)
   private Path pinPath;
 
   @Option(
-          names = {"-a", "--eth-address"},
-          description = "Ethereum address of account to sign with.",
-          paramLabel = "<ETH_ADDRESS>",
-          required = true)
+      names = {"-a", "--eth-address"},
+      description = "Ethereum address of account to sign with.",
+      paramLabel = "<ETH_ADDRESS>",
+      required = true)
   private String ethAddress;
 
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
-    //return HSMTransactionSignerFactory.createSigner(library, slot, pin);
+    // return HSMTransactionSignerFactory.createSigner(library, slot, pin);
     final String pin;
     try {
       pin = readPinFromFile(pinPath);
@@ -83,15 +84,19 @@ public class HSMSubCommand extends SignerSubCommand {
       throw new TransactionSignerInitializationException(READ_PIN_FILE_ERROR, e);
     }
 
-    //final HSMConfig config = new HSMConfig(keyVaultName, keyName, keyVersion, clientId, clientSecret);
+    // final HSMConfig config = new HSMConfig(keyVaultName, keyName, keyVersion, clientId,
+    // clientSecret);
 
-    final HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, pin));
+    final HSMTransactionSignerFactory factory =
+        new HSMTransactionSignerFactory(
+            new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, pin));
 
     return factory.createSigner(ethAddress);
   }
 
   @Override
-  public TransactionSignerProvider createSignerFactory() throws TransactionSignerInitializationException {
+  public TransactionSignerProvider createSignerFactory()
+      throws TransactionSignerInitializationException {
     return new SingleTransactionSignerProvider(createSigner());
   }
 

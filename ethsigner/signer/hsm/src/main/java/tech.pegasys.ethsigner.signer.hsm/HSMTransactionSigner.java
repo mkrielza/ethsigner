@@ -14,6 +14,7 @@ package tech.pegasys.ethsigner.signer.hsm;
 
 import tech.pegasys.ethsigner.core.signing.Signature;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
+
 import java.security.KeyStore;
 
 public class HSMTransactionSigner implements TransactionSigner {
@@ -30,11 +31,11 @@ public class HSMTransactionSigner implements TransactionSigner {
   public Signature sign(final byte[] data) {
     KeyStore keyStore = provider.getKeyStore();
     System.out.println(keyStore.getType());
-//    final SignatureData signature = Sign.signMessage(data, credentials.getEcKeyPair());
-//    return new Signature(
-//        new BigInteger(signature.getV()),
-//        new BigInteger(signature.getR()),
-//        new BigInteger(signature.getS()));
+    //    final SignatureData signature = Sign.signMessage(data, credentials.getEcKeyPair());
+    //    return new Signature(
+    //        new BigInteger(signature.getV()),
+    //        new BigInteger(signature.getR()),
+    //        new BigInteger(signature.getS()));
     return null;
   }
 

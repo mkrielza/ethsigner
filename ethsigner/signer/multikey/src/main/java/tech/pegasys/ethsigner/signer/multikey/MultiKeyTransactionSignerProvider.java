@@ -21,8 +21,8 @@ import tech.pegasys.ethsigner.signer.hashicorp.HashicorpVaultSignerFactory;
 import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 import tech.pegasys.ethsigner.signer.multikey.metadata.AzureSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.FileBasedSigningMetadataFile;
-import tech.pegasys.ethsigner.signer.multikey.metadata.HashicorpSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.HSMSigningMetadataFile;
+import tech.pegasys.ethsigner.signer.multikey.metadata.HashicorpSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.SigningMetadataFile;
 
 import java.util.Objects;
