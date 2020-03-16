@@ -12,16 +12,12 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-
 import tech.pegasys.ethsigner.SignerSubCommand;
 import tech.pegasys.ethsigner.TransactionSignerInitializationException;
 import tech.pegasys.ethsigner.core.signing.SingleTransactionSignerProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.google.common.base.MoreObjects;
@@ -37,7 +33,7 @@ import picocli.CommandLine.Spec;
     mixinStandardHelpOptions = true)
 public class HSMSubCommand extends SignerSubCommand {
 
-  private static final String READ_PIN_FILE_ERROR = "Error when reading the pin from file.";
+  // private static final String READ_PIN_FILE_ERROR = "Error when reading the pin from file.";
   public static final String COMMAND_NAME = "hsm-signer";
 
   public HSMSubCommand() {}
@@ -48,25 +44,24 @@ public class HSMSubCommand extends SignerSubCommand {
 
   @Option(
       names = {"-l", "--library"},
-      description = "The PKCS11 library used to sign transactions.",
+      description = "The HSM PKCS11 library used to sign transactions.",
       paramLabel = "<LIBRARY_PATH>",
       required = true)
   private Path libraryPath;
 
   @Option(
       names = {"-s", "--slot-index"},
-      description = "The slot housing private keys used to sign transactions.",
+      description = "The HSM slot used to sign transactions.",
       paramLabel = "<SLOT_INDEX>",
       required = true)
   private String slotIndex;
 
   @Option(
-      names = {"-p", "--pin-path"},
-      description =
-          "Path to a file containing the crypto user pin of the slot housing the private key used to sign transactions.",
-      paramLabel = "<PIN_PATH>",
+      names = {"-p", "--slot-pin"},
+      description = "The crypto user pin of the HSM slot used to sign transactions.",
+      paramLabel = "<SLOT_PIN>",
       required = true)
-  private Path pinPath;
+  private String slotPin;
 
   @Option(
       names = {"-a", "--eth-address"},
@@ -76,21 +71,16 @@ public class HSMSubCommand extends SignerSubCommand {
   private String ethAddress;
 
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
-    // return HSMTransactionSignerFactory.createSigner(library, slot, pin);
-    final String pin;
-    try {
-      pin = readPinFromFile(pinPath);
-    } catch (final IOException e) {
-      throw new TransactionSignerInitializationException(READ_PIN_FILE_ERROR, e);
-    }
+    //    final String pin;
+    //    try {
+    //      pin = readPinFromFile(pinPath);
+    //    } catch (final IOException e) {
+    //      throw new TransactionSignerInitializationException(READ_PIN_FILE_ERROR, e);
+    //    }
 
-    // final HSMConfig config = new HSMConfig(keyVaultName, keyName, keyVersion, clientId,
-    // clientSecret);
-
-    final HSMTransactionSignerFactory factory =
-        new HSMTransactionSignerFactory(
-            new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, pin));
-
+    final HSMKeyStoreProvider provider =
+        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
+    final HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(provider);
     return factory.createSigner(ethAddress);
   }
 
@@ -110,11 +100,12 @@ public class HSMSubCommand extends SignerSubCommand {
     return MoreObjects.toStringHelper(this)
         .add("library", libraryPath)
         .add("slot", slotIndex)
+        .add("address", ethAddress)
         .toString();
   }
 
-  private static String readPinFromFile(final Path path) throws IOException {
-    final byte[] fileContent = Files.readAllBytes(path);
-    return new String(fileContent, UTF_8);
-  }
+  //  private static String readPinFromFile(final Path path) throws IOException {
+  //    final byte[] fileContent = Files.readAllBytes(path);
+  //    return new String(fileContent, UTF_8);
+  //  }
 }

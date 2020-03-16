@@ -33,10 +33,13 @@ import org.apache.logging.log4j.Logger;
 public class HSMKeyStoreProvider {
 
   private static final Logger LOG = LogManager.getLogger();
-  private static final String ERROR_CREATING_TMP_FILE_MESSAGE = "";
-  private static final String ERROR_ACCESSING_TMP_FILE_MESSAGE = "";
-  private static final String ERROR_INITIALIZING_PKCS11_KEYSTORE_MESSAGE = "";
-  private static final String ERROR_ACCESSING_PKCS11_KEYSTORE_MESSAGE = "";
+  private static final String ERROR_CREATING_TMP_FILE_MESSAGE =
+      "Failed to create a temp config file";
+  private static final String ERROR_ACCESSING_TMP_FILE_MESSAGE = "Failed to access config file";
+  private static final String ERROR_INITIALIZING_PKCS11_KEYSTORE_MESSAGE =
+      "Failed to initialize key store";
+  private static final String ERROR_ACCESSING_PKCS11_KEYSTORE_MESSAGE =
+      "Failed to access key store";
 
   private Provider provider = null;
   private KeyStore keyStore = null;
@@ -53,7 +56,12 @@ public class HSMKeyStoreProvider {
     tmpConfigFile.deleteOnExit();
     PrintWriter configWriter = null;
     try {
-      configWriter =  new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(tmpConfigFile), Charset.defaultCharset())), true);
+      configWriter =
+          new PrintWriter(
+              new BufferedWriter(
+                  new OutputStreamWriter(
+                      new FileOutputStream(tmpConfigFile), Charset.defaultCharset())),
+              true);
     } catch (FileNotFoundException ex) {
       LOG.debug(ERROR_ACCESSING_TMP_FILE_MESSAGE);
       LOG.trace(ex);
@@ -62,6 +70,9 @@ public class HSMKeyStoreProvider {
     configWriter.println(String.format("name=%s", "HSM"));
     configWriter.println(String.format("library=%s", library));
     configWriter.println(String.format("slot=%s", slot));
+    configWriter.println("attributes(generate, *, *) = { CKA_TOKEN = true }");
+    configWriter.println("attributes(generate, CKO_CERTIFICATE, *) = { CKA_PRIVATE=false }");
+    configWriter.println("attributes(generate, CKO_PUBLIC_KEY, *) = { CKA_PRIVATE=false }");
     String configName = tmpConfigFile.getAbsolutePath();
 
     Provider prototype = Security.getProvider("SunPKCS11");
@@ -81,7 +92,7 @@ public class HSMKeyStoreProvider {
       LOG.trace(ex);
       throw new HSMKeyStoreInitializationException(ERROR_ACCESSING_PKCS11_KEYSTORE_MESSAGE, ex);
     }
-    System.out.println("Successfully initialized slot");
+    LOG.debug("Successfully initialized slot");
   }
 
   public KeyStore getKeyStore() {

@@ -16,8 +16,6 @@ import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
 public class HSMTransactionSignerFactory {
 
-  // private static final Logger LOG = LogManager.getLogger();
-
   private final HSMKeyStoreProvider provider;
 
   public HSMTransactionSignerFactory(final HSMKeyStoreProvider provider) {
@@ -25,28 +23,6 @@ public class HSMTransactionSignerFactory {
   }
 
   public TransactionSigner createSigner(String address) {
-    //    final String password;
-    //    try {
-    //      password = readPasswordFromFile(passwordFilePath);
-    //    } catch (final IOException e) {
-    //      final String message = READ_PWD_FILE_MESSAGE;
-    //      LOG.error(message, e);
-    //      throw new TransactionSignerInitializationException(message, e);
-    //    }
-    //    try {
-    //      final Credentials credentials = WalletUtils.loadCredentials(password,
-    // keyFilePath.toFile());
-    //      return new HSMTransactionSigner(credentials);
-    //    } catch (final IOException e) {
-    //      final String message = READ_AUTH_FILE_MESSAGE + keyFilePath.toString();
-    //      LOG.error(message, e);
-    //      throw new TransactionSignerInitializationException(message, e);
-    //    } catch (final CipherException e) {
-    //      final String message = DECRYPTING_KEY_FILE_MESSAGE;
-    //      LOG.error(message, e);
-    //      throw new TransactionSignerInitializationException(message, e);
-    //    }
-
     return new HSMTransactionSigner(provider, address);
   }
 }

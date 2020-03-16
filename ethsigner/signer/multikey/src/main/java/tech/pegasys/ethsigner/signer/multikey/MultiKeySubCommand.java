@@ -19,6 +19,8 @@ import tech.pegasys.ethsigner.TransactionSignerInitializationException;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
+import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
+import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
 import java.nio.file.Path;
 
@@ -44,6 +46,10 @@ public class MultiKeySubCommand extends SignerSubCommand {
 
   public static final String COMMAND_NAME = "multikey-signer";
 
+  public static final String IDENTIFIER_FILE_BASED = "file-based";
+  public static final String IDENTIFIER_AZURE = "azure";
+  public static final String IDENTIFIER_HSM = "hsm";
+
   public MultiKeySubCommand() {}
 
   @SuppressWarnings("unused") // Picocli injects reference to command spec
@@ -51,24 +57,67 @@ public class MultiKeySubCommand extends SignerSubCommand {
   private CommandLine.Model.CommandSpec spec;
 
   @Option(
+      names = {"-i", "--identifier"},
+      description = "The identifier for the multikey signer to be used",
+      required = true,
+      paramLabel = "<IDENTIFIER>",
+      arity = "1")
+  private String identifier;
+
+  @Option(
       names = {"-d", "--directory"},
       description = "The path to a directory containing signing metadata TOML files",
-      required = true,
+      required = false,
       paramLabel = MANDATORY_PATH_FORMAT_HELP,
       arity = "1")
   private Path directoryPath;
 
+  @Option(
+      names = {"-l", "--library"},
+      description = "The HSM PKCS11 library used to sign transactions.",
+      paramLabel = "<LIBRARY_PATH>",
+      required = false)
+  private Path libraryPath;
+
+  @Option(
+      names = {"-s", "--slot-index"},
+      description = "The HSM slot used to sign transactions.",
+      paramLabel = "<SLOT_INDEX>",
+      required = false)
+  private String slotIndex;
+
+  @Option(
+      names = {"-p", "--slot-pin"},
+      description = "The crypto user pin of the HSM slot used to sign transactions.",
+      paramLabel = "<SLOT_PIN>",
+      required = false)
+  private String slotPin;
+
   @Override
   public TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException {
-    final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader =
-        new SigningMetadataTomlConfigLoader(directoryPath);
-
-    final AzureKeyVaultTransactionSignerFactory azureFactory =
-        new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
-
-    return new MultiKeyTransactionSignerProvider(
-        signingMetadataTomlConfigLoader, azureFactory, null);
+    switch (identifier) {
+      case IDENTIFIER_FILE_BASED:
+        {
+          final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader =
+              new SigningMetadataTomlConfigLoader(directoryPath);
+          return new MultiKeyTransactionSignerProvider(signingMetadataTomlConfigLoader, null, null);
+        }
+      case IDENTIFIER_AZURE:
+        {
+          final AzureKeyVaultTransactionSignerFactory azureFactory =
+              new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
+          return new MultiKeyTransactionSignerProvider(null, azureFactory, null);
+        }
+      case IDENTIFIER_HSM:
+        {
+          final HSMTransactionSignerFactory hsmFactory =
+              new HSMTransactionSignerFactory(
+                  new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
+          return new MultiKeyTransactionSignerProvider(null, null, hsmFactory);
+        }
+    }
+    throw new TransactionSignerInitializationException("Incorrect identifier");
   }
 
   @Override
