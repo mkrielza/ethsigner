@@ -135,7 +135,7 @@ public class HSMKeyStoreProviderTest {
     ECDomainParameters ec =
         new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
     byte[] publicKey = ec.getCurve().createPoint(x, y).getEncoded(false);
-    return Keys.getAddress(Sign.publicFromPoint(publicKey));
+    return Keys.toChecksumAddress(Keys.getAddress(Sign.publicFromPoint(publicKey)));
   }
 
   private static X509Certificate generateCert(
