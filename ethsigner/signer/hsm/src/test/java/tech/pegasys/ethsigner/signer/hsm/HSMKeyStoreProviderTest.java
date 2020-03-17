@@ -12,6 +12,22 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
+import java.math.BigInteger;
+import java.nio.charset.Charset;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.Provider;
+import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.cert.X509Certificate;
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECPoint;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Enumeration;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DERSequence;
@@ -32,27 +48,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
-
-
-import java.nio.charset.Charset;
-import java.security.KeyStore;
-import java.security.Provider;
-import java.security.PrivateKey;
-import java.security.SecureRandom;
-import java.security.KeyPairGenerator;
-import java.security.KeyPair;
-import java.security.Signature;
-
-import java.math.BigInteger;
-import java.security.cert.X509Certificate;
-
-import java.security.interfaces.ECPublicKey;
-import java.security.spec.ECGenParameterSpec;
-import java.security.spec.ECPoint;
-import java.util.Enumeration;
-import java.util.Date;
-import java.util.Calendar;
-
 
 public class HSMKeyStoreProviderTest {
 
@@ -80,18 +75,19 @@ public class HSMKeyStoreProviderTest {
       System.out.println(ex.getMessage());
     }
 
-//    try {
-//      ks.deleteEntry("example1_test");
-//    } catch (KeyStoreException e) {
-//      System.out.println(e.getMessage());
-//    }
+    //    try {
+    //      ks.deleteEntry("example1_test");
+    //    } catch (KeyStoreException e) {
+    //      System.out.println(e.getMessage());
+    //    }
   }
 
   private static String generateKey(Provider p, KeyStore ks, String algo, String curve)
       throws Exception {
     System.out.println("Testing curve " + curve);
 
-    // Generate an EC key pair using the provider to force generation on the HSM instead of software.
+    // Generate an EC key pair using the provider to force generation on the HSM instead of
+    // software.
     KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", p);
     ECGenParameterSpec kpgparams = new ECGenParameterSpec(curve);
     keyPairGenerator.initialize(kpgparams);
@@ -136,7 +132,8 @@ public class HSMKeyStoreProviderTest {
     final BigInteger x = w.getAffineX();
     final BigInteger y = w.getAffineY();
     X9ECParameters params = SECNamedCurves.getByName(curve);
-    ECDomainParameters ec = new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
+    ECDomainParameters ec =
+        new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
     byte[] publicKey = ec.getCurve().createPoint(x, y).getEncoded(false);
     return Keys.getAddress(Sign.publicFromPoint(publicKey));
   }
@@ -180,4 +177,3 @@ public class HSMKeyStoreProviderTest {
     return cert;
   }
 }
-

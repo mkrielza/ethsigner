@@ -12,14 +12,6 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import org.bouncycastle.asn1.ASN1Encodable;
-import org.bouncycastle.asn1.ASN1InputStream;
-import org.bouncycastle.asn1.ASN1Integer;
-import org.bouncycastle.asn1.ASN1Primitive;
-import org.bouncycastle.asn1.ASN1Sequence;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.crypto.params.ECDomainParameters;
 import tech.pegasys.ethsigner.core.signing.Signature;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
@@ -38,6 +30,14 @@ import java.security.spec.ECPoint;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.ASN1Encodable;
+import org.bouncycastle.asn1.ASN1InputStream;
+import org.bouncycastle.asn1.ASN1Integer;
+import org.bouncycastle.asn1.ASN1Primitive;
+import org.bouncycastle.asn1.ASN1Sequence;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.crypto.params.ECDomainParameters;
 import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.Hash;
 import org.web3j.crypto.Sign;
@@ -114,7 +114,8 @@ public class HSMTransactionSigner implements TransactionSigner {
       asn1Signature = asnInputStream.readObject();
     } catch (Exception ex) {
       LOG.trace(ex);
-      throw new RuntimeException("Failed to decode DER encoded signature produced by hsm signing service");
+      throw new RuntimeException(
+          "Failed to decode DER encoded signature produced by hsm signing service");
     }
     if (asn1Signature instanceof ASN1Sequence) {
       ASN1Sequence asn1Sequence = (ASN1Sequence) asn1Signature;
@@ -167,7 +168,8 @@ public class HSMTransactionSigner implements TransactionSigner {
     final BigInteger x = w.getAffineX();
     final BigInteger y = w.getAffineY();
     X9ECParameters params = SECNamedCurves.getByName("secp256k1");
-    ECDomainParameters curve = new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
+    ECDomainParameters curve =
+        new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
     return curve.getCurve().createPoint(x, y).getEncoded(false);
   }
 }
