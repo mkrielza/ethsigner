@@ -61,7 +61,7 @@ public class SendTransactionHandler implements JsonRpcRequestHandler {
 
   @Override
   public void handle(final RoutingContext context, final JsonRpcRequest request) {
-    LOG.debug("Transforming request {}, {}", request.getId(), request.getMethod());
+      LOG.debug("Transforming request {}, {}", request.getId(), request.getMethod());
     final Transaction transaction;
     try {
       transaction = transactionFactory.createTransaction(context, request);

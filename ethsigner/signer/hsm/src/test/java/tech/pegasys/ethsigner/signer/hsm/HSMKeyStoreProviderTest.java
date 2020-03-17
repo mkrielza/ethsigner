@@ -11,7 +11,48 @@
  * specific language governing permissions and limitations under the License.
  */
 package tech.pegasys.ethsigner.signer.hsm;
-/*
+
+
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+
+
+import java.nio.charset.Charset;
+import java.security.KeyStore;
+import java.security.Provider;
+import java.security.PrivateKey;
+import java.security.SecureRandom;
+import java.security.KeyPairGenerator;
+import java.security.KeyPair;
+import java.security.Signature;
+
+import java.math.BigInteger;
+import java.security.cert.X509Certificate;
+
+import java.security.interfaces.ECPublicKey;
+import java.security.spec.ECGenParameterSpec;
+import java.security.spec.ECPoint;
+import java.util.Enumeration;
+import java.util.Date;
+import java.util.Calendar;
+
 
 public class HSMKeyStoreProviderTest {
 
@@ -27,38 +68,43 @@ public class HSMKeyStoreProviderTest {
     HSMKeyStoreProvider ksp = new HSMKeyStoreProvider(library, slot, pin);
     Provider p = ksp.getProvider();
     KeyStore ks = ksp.getKeyStore();
+    byte[] data = "Hello Kitty".getBytes(Charset.defaultCharset());
     try {
-      generateKey(p, ks, "SHA256withECDSA", "secp256k1");
+      String address = generateKey(p, ks, "SHA256withECDSA", "secp256k1");
+      HSMTransactionSigner signer = new HSMTransactionSigner(ksp, address);
+      System.out.println("Signature: " + signer.sign(data).toString());
+
       // eccDemo(p, ks, "SHA256withECDSA", "secp256r1");
       // eccDemo(p, ks, "SHA256withECDSA", "secp384r1");
     } catch (Exception ex) {
       System.out.println(ex.getMessage());
     }
+
+//    try {
+//      ks.deleteEntry("example1_test");
+//    } catch (KeyStoreException e) {
+//      System.out.println(e.getMessage());
+//    }
   }
 
-  private static void generateKey(Provider p, KeyStore ks, String algo, String curve)
+  private static String generateKey(Provider p, KeyStore ks, String algo, String curve)
       throws Exception {
     System.out.println("Testing curve " + curve);
 
-    String alias = "alias";
-    // Delete previous test entry.
-    ks.deleteEntry(alias);
-
-    // Generate an EC key pair using the provider to force generation on the HSM instead of
-    // software.
+    // Generate an EC key pair using the provider to force generation on the HSM instead of software.
     KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", p);
     ECGenParameterSpec kpgparams = new ECGenParameterSpec(curve);
     keyPairGenerator.initialize(kpgparams);
-    System.out.println("Generating key pair.");
     KeyPair keyPair = keyPairGenerator.generateKeyPair();
 
-    // Create a self-signed certificate to store with the public key. This is a java keystore
-    // requirement. The certificate is signed using the HSM
-    System.out.println("Creating self signed certificate.");
+    // Create a self-signed certificate to store with the public key.
+    // This is a java keystore requirement. The certificate is signed using the HSM.
     X509Certificate cert = generateCert(keyPair, 1, algo, "CN=EthSigner, L=CT, C=ZA", p);
+    String alias = generateAddr(keyPair, curve);
     ks.setKeyEntry(alias, keyPair.getPrivate(), null, new X509Certificate[] {cert});
+    System.out.println("Generated key pair with address " + alias);
 
-    // sign some data
+    // Sign some data
     Signature sig = Signature.getInstance(algo, p);
     sig.initSign(keyPair.getPrivate());
     byte[] data = "test".getBytes(Charset.defaultCharset());
@@ -66,7 +112,7 @@ public class HSMKeyStoreProviderTest {
     byte[] s = sig.sign();
     System.out.println("Signed with hardware key.");
 
-    // verify the signature
+    // Verify the signature
     sig.initVerify(keyPair.getPublic());
     sig.update(data);
     if (!sig.verify(s)) {
@@ -81,12 +127,23 @@ public class HSMKeyStoreProviderTest {
       String a = aliases.nextElement();
       System.out.println("Successfully enumerated alias: " + a);
     }
+
+    return alias;
+  }
+
+  private static String generateAddr(KeyPair keyPair, String curve) {
+    final ECPoint w = ((ECPublicKey) keyPair.getPublic()).getW();
+    final BigInteger x = w.getAffineX();
+    final BigInteger y = w.getAffineY();
+    X9ECParameters params = SECNamedCurves.getByName(curve);
+    ECDomainParameters ec = new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
+    byte[] publicKey = ec.getCurve().createPoint(x, y).getEncoded(false);
+    return Keys.getAddress(Sign.publicFromPoint(publicKey));
   }
 
   private static X509Certificate generateCert(
       KeyPair pair, int days, String algorithm, String dn, Provider p) throws Exception {
     X500Name issuerName = new X500Name(dn);
-
     BigInteger serial = BigInteger.valueOf(new SecureRandom().nextInt()).abs();
     Calendar calendar = Calendar.getInstance();
     Date startDate = new Date();
@@ -123,4 +180,4 @@ public class HSMKeyStoreProviderTest {
     return cert;
   }
 }
-*/
+
