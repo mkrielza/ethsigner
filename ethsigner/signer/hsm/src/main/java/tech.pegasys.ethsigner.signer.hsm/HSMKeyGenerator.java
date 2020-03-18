@@ -68,6 +68,7 @@ public class HSMKeyGenerator implements KeyGenerator {
     this.provider = provider;
   }
 
+  @Override
   public String generate() {
     Provider p = provider.getProvider();
     KeyStore ks = provider.getKeyStore();
