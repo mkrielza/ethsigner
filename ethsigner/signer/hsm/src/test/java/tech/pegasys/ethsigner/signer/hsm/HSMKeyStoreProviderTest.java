@@ -12,15 +12,73 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.UnrecoverableEntryException;
+import java.util.List;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
+
+public class HSMKeyStoreProviderTest {
+
+  public static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
+  public static String slot = "992881475";
+  public static String pin = "us3rs3cur3";
+
+
+  @BeforeAll
+  public static void setup() {}
+
+  @Test
+  public void generateKeyTest() {
+    HSMKeyStoreProvider ksp = new HSMKeyStoreProvider(library, slot, pin);
+    HSMKeyGenerator kgr = new HSMKeyGenerator(ksp);
+    String address = kgr.generate();
+    boolean exists = kgr.exists(address);
+    List<String> addresses = kgr.getAll();
+
+    KeyStore.PrivateKeyEntry privateKeyEntry = null;
+    try {
+      privateKeyEntry = (KeyStore.PrivateKeyEntry) ksp.getKeyStore().getEntry(address, null);
+    } catch (NoSuchAlgorithmException | UnrecoverableEntryException | KeyStoreException e) {
+      //throw new Exception("Could not retrieve the key");
+    }
+    PrivateKey privateKey = privateKeyEntry.getPrivateKey();
+    /*
+    // Sign some data
+    Signature sig = Signature.getInstance("SHA256withECDSA", ksp.getProvider());
+    sig.initSign(privateKey);
+    byte[] data = "test".getBytes(Charset.defaultCharset());
+    sig.update(data);
+    byte[] s = sig.sign();
+    System.out.println("Signed with hardware key.");
+
+    // Verify the signature
+    sig.initVerify(keyPair.getPublic());
+    sig.update(data);
+    if (!sig.verify(s)) {
+      throw new Exception("Signature did not verify");
+    }
+    System.out.println("Verified with hardware key.");
+    */
+  }
+}
+
+/*
 import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.SecureRandom;
 import java.security.Signature;
+import java.security.UnrecoverableEntryException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
@@ -28,6 +86,7 @@ import java.security.spec.ECPoint;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 
 import org.bouncycastle.asn1.ASN1EncodableVector;
 import org.bouncycastle.asn1.DERSequence;
@@ -54,6 +113,7 @@ public class HSMKeyStoreProviderTest {
   public static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
   public static String slot = "992881475";
   public static String pin = "us3rs3cur3";
+
 
   @BeforeAll
   public static void setup() {}
@@ -177,3 +237,4 @@ public class HSMKeyStoreProviderTest {
     return cert;
   }
 }
+*/

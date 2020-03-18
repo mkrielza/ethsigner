@@ -45,6 +45,8 @@ import org.web3j.crypto.Sign;
 public class HSMTransactionSigner implements TransactionSigner {
 
   private static final Logger LOG = LogManager.getLogger();
+  private static final String CURVE = "secp256k1";
+  private static final String ALGORITHM = "NONEwithECDSA";
 
   private final HSMKeyStoreProvider provider;
   private final String address;
@@ -79,7 +81,7 @@ public class HSMTransactionSigner implements TransactionSigner {
     final byte[] hash = Hash.sha3(data);
     java.security.Signature sig;
     try {
-      sig = java.security.Signature.getInstance("NONEwithECDSA", provider.getProvider());
+      sig = java.security.Signature.getInstance(ALGORITHM, provider.getProvider());
     } catch (NoSuchAlgorithmException ex) {
       LOG.trace(ex);
       throw new RuntimeException("Failed to get hsm signing service for this algorithm");
@@ -167,7 +169,7 @@ public class HSMTransactionSigner implements TransactionSigner {
     final ECPoint w = publicKey.getW();
     final BigInteger x = w.getAffineX();
     final BigInteger y = w.getAffineY();
-    X9ECParameters params = SECNamedCurves.getByName("secp256k1");
+    X9ECParameters params = SECNamedCurves.getByName(CURVE);
     ECDomainParameters curve =
         new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
     return curve.getCurve().createPoint(x, y).getEncoded(false);

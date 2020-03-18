@@ -73,6 +73,7 @@ public class HSMKeyStoreProvider {
     configWriter.println("attributes(generate, *, *) = { CKA_TOKEN = true }");
     configWriter.println("attributes(generate, CKO_CERTIFICATE, *) = { CKA_PRIVATE=false }");
     configWriter.println("attributes(generate, CKO_PUBLIC_KEY, *) = { CKA_PRIVATE=false }");
+    configWriter.close();
     String configName = tmpConfigFile.getAbsolutePath();
 
     Provider prototype = Security.getProvider("SunPKCS11");

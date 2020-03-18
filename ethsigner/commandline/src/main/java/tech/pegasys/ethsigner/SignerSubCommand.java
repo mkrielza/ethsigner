@@ -50,7 +50,7 @@ public abstract class SignerSubCommand implements Runnable {
     LOG.debug("Configuration = {}", this);
     LOG.info("Version = {}", ApplicationInfo.version());
 
-    final EthSigner signer = new EthSigner(config, createSignerFactory());
+    final EthSigner signer = new EthSigner(config, createSignerFactory(), null);
     signer.run();
   }
 }
