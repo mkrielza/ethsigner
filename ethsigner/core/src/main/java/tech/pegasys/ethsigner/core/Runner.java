@@ -158,7 +158,7 @@ public class Runner {
             jsonDecoder));
     if (keyGeneratorProvider != null) {
       final GenerateAccountHandler generateAccountHandler =
-          new GenerateAccountHandler(keyGeneratorProvider, responseFactory, jsonDecoder);
+          new GenerateAccountHandler(keyGeneratorProvider, responseFactory);
       requestMapper.addHandler("eth_generateAccount", generateAccountHandler);
     }
     return requestMapper;

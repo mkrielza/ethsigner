@@ -21,6 +21,7 @@ import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
+import tech.pegasys.ethsigner.signer.hsm.HSMKeyGeneratorFactory;
 import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
 import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
@@ -126,25 +127,19 @@ public class MultiKeySubCommand extends SignerSubCommand {
 
   @Override
   public KeyGeneratorProvider createGeneratorFactory() throws KeyGeneratorInitializationException {
-    //    switch (identifier) {
-    //      case IDENTIFIER_FILE_BASED:
-    //      {
-    //        return null;
-    //      }
-    //      case IDENTIFIER_AZURE:
-    //      {
-    //        return null;
-    //      }
-    //      case IDENTIFIER_HSM:
-    //      {
-    //        final HSMKeyGeneratorFactory hsmFactory =
-    //                new HSMKeyGeneratorFactory(
-    //                        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
-    //        return hsmFactory;
-    //      }
-    //    }
-    //    throw new KeyGeneratorInitializationException("Incorrect identifier");
-    return null;
+    switch (identifier) {
+      case IDENTIFIER_FILE_BASED:
+      case IDENTIFIER_AZURE:
+        {
+          return null;
+        }
+      case IDENTIFIER_HSM:
+        {
+          return new HSMKeyGeneratorFactory(
+              new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
+        }
+    }
+    throw new KeyGeneratorInitializationException("Incorrect identifier");
   }
 
   @Override

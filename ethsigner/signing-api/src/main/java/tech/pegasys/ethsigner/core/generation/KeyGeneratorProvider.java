@@ -12,9 +12,7 @@
  */
 package tech.pegasys.ethsigner.core.generation;
 
-import java.util.Optional;
-
 public interface KeyGeneratorProvider {
 
-  Optional<KeyGenerator> getGenerator(String curve);
+  KeyGenerator getGenerator();
 }

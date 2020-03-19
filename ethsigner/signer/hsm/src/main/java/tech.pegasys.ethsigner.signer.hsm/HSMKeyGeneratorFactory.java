@@ -12,7 +12,9 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-public class HSMKeyGeneratorFactory {
+import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
+
+public class HSMKeyGeneratorFactory implements KeyGeneratorProvider {
 
   private final HSMKeyStoreProvider provider;
 
@@ -20,7 +22,8 @@ public class HSMKeyGeneratorFactory {
     this.provider = provider;
   }
 
-  public HSMKeyGenerator createGenerator(String curve) {
+  @Override
+  public HSMKeyGenerator getGenerator() {
     return new HSMKeyGenerator(provider);
   }
 }
