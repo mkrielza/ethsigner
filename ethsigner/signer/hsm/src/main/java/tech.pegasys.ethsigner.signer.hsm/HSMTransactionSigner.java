@@ -64,6 +64,10 @@ public class HSMTransactionSigner implements TransactionSigner {
       privateKeyEntry = (PrivateKeyEntry) provider.getKeyStore().getEntry(address, null);
     } catch (NoSuchAlgorithmException | UnrecoverableEntryException | KeyStoreException ex) {
       LOG.trace(ex);
+      throw new RuntimeException("Failed to query key store");
+    }
+
+    if (privateKeyEntry == null) {
       throw new RuntimeException("Failed to get private key from key store");
     }
     PrivateKey privateKey = privateKeyEntry.getPrivateKey();

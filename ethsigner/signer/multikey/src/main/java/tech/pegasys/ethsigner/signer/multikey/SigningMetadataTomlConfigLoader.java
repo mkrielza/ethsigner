@@ -16,8 +16,10 @@ import static tech.pegasys.ethsigner.signer.hashicorp.HashicorpSubCommand.DEFAUL
 
 import tech.pegasys.ethsigner.signer.azure.AzureConfig.AzureConfigBuilder;
 import tech.pegasys.ethsigner.signer.hashicorp.HashicorpConfig;
+import tech.pegasys.ethsigner.signer.hsm.HSMConfig;
 import tech.pegasys.ethsigner.signer.multikey.metadata.AzureSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.FileBasedSigningMetadataFile;
+import tech.pegasys.ethsigner.signer.multikey.metadata.HSMSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.HashicorpSigningMetadataFile;
 import tech.pegasys.ethsigner.signer.multikey.metadata.SigningMetadataFile;
 
@@ -103,6 +105,8 @@ class SigningMetadataTomlConfigLoader {
         return getAzureBasedSigningMetadataFromToml(file.getFileName().toString(), result);
       } else if (SignerType.fromString(type).equals(SignerType.HASHICORP_SIGNER)) {
         return getHashicorpMetadataFromToml(file.getFileName().toString(), result);
+      } else if (SignerType.fromString(type).equals(SignerType.HSM_SIGNER)) {
+        return getHSMSigningMetadataFromToml(file.getFileName().toString(), result);
       } else {
         LOG.error("Unknown signing type in metadata: " + type);
         return Optional.empty();
@@ -174,6 +178,22 @@ class SigningMetadataTomlConfigLoader {
             table.getOptionalString("tls-known-server-file").map(this::makeRelativePathAbsolute));
 
     return Optional.of(new HashicorpSigningMetadataFile(filename, builder.build()));
+  }
+
+  private Optional<SigningMetadataFile> getHSMSigningMetadataFromToml(
+      final String filename, final TomlParseResult result) {
+
+    final Optional<TomlTableAdapter> signingTable = getSigningTableFrom(filename, result);
+    if (signingTable.isEmpty()) {
+      return Optional.empty();
+    }
+
+    final HSMConfig.HSMConfigBuilder builder;
+    final TomlTableAdapter table = signingTable.get();
+    builder = new HSMConfig.HSMConfigBuilder();
+    builder.withAddress(table.getString("address"));
+    builder.withSlotIndex(table.getString("slotIndex"));
+    return Optional.of(new HSMSigningMetadataFile(filename, builder.build()));
   }
 
   private Optional<TomlTableAdapter> getSigningTableFrom(

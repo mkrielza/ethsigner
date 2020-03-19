@@ -41,7 +41,11 @@ class MultiKeySubCommandTest {
   void parseCommandSuccessfullySetDirectory() {
     final Path expectedPath = Path.of("/keys/directory/path");
 
-    commandLine.parse("--directory", expectedPath.toString());
+    commandLine.parse(
+        "--identifier",
+        MultiKeySubCommand.IDENTIFIER_FILE_BASED,
+        "--directory",
+        expectedPath.toString());
 
     final ParseResult parseResult = commandLine.getParseResult();
     assertThat(parseResult.errors()).isEmpty();
@@ -54,7 +58,7 @@ class MultiKeySubCommandTest {
   void parseCommandSuccessfullyUsingShortcutSetDirectory() {
     final Path expectedPath = Path.of("/keys/directory/path");
 
-    commandLine.parse("-d", "/keys/directory/path");
+    commandLine.parse("-i", MultiKeySubCommand.IDENTIFIER_FILE_BASED, "-d", "/keys/directory/path");
 
     final ParseResult parseResult = commandLine.getParseResult();
     assertThat(parseResult.errors()).isEmpty();

@@ -23,8 +23,8 @@ import tech.pegasys.ethsigner.core.http.UpcheckHandler;
 import tech.pegasys.ethsigner.core.jsonrpc.JsonDecoder;
 import tech.pegasys.ethsigner.core.requesthandler.VertxRequestTransmitter;
 import tech.pegasys.ethsigner.core.requesthandler.VertxRequestTransmitterFactory;
+import tech.pegasys.ethsigner.core.requesthandler.generateaccount.GenerateAccountHandler;
 import tech.pegasys.ethsigner.core.requesthandler.internalresponse.EthAccountsBodyProvider;
-import tech.pegasys.ethsigner.core.requesthandler.internalresponse.EthGenerateAccountBodyProvider;
 import tech.pegasys.ethsigner.core.requesthandler.internalresponse.InternalResponseHandler;
 import tech.pegasys.ethsigner.core.requesthandler.passthrough.PassThroughHandler;
 import tech.pegasys.ethsigner.core.requesthandler.sendtransaction.SendTransactionHandler;
@@ -157,12 +157,9 @@ public class Runner {
             new EthAccountsBodyProvider(transactionSignerProvider::availableAddresses),
             jsonDecoder));
     if (keyGeneratorProvider != null) {
-      requestMapper.addHandler(
-              "eth_generateAccount",
-              new InternalResponseHandler(
-                      responseFactory,
-                      new EthGenerateAccountBodyProvider(transactionSignerProvider::availableAddresses),
-                      jsonDecoder));
+      final GenerateAccountHandler generateAccountHandler =
+          new GenerateAccountHandler(keyGeneratorProvider, responseFactory, jsonDecoder);
+      requestMapper.addHandler("eth_generateAccount", generateAccountHandler);
     }
     return requestMapper;
   }

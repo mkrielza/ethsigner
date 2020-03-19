@@ -44,7 +44,10 @@ public final class EthSigner {
   private final KeyGeneratorProvider keyGeneratorProvider;
   private final WebClientOptionsFactory webClientOptionsFactory = new WebClientOptionsFactory();
 
-  public EthSigner(final Config config, final TransactionSignerProvider transactionSignerProvider, final KeyGeneratorProvider keyGeneratorProvider) {
+  public EthSigner(
+      final Config config,
+      final TransactionSignerProvider transactionSignerProvider,
+      final KeyGeneratorProvider keyGeneratorProvider) {
     this.config = config;
     this.transactionSignerProvider = transactionSignerProvider;
     this.keyGeneratorProvider = keyGeneratorProvider;

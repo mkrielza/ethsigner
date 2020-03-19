@@ -14,8 +14,10 @@ package tech.pegasys.ethsigner.signer.multikey;
 
 import static tech.pegasys.ethsigner.DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP;
 
+import tech.pegasys.ethsigner.KeyGeneratorInitializationException;
 import tech.pegasys.ethsigner.SignerSubCommand;
 import tech.pegasys.ethsigner.TransactionSignerInitializationException;
+import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
@@ -67,7 +69,7 @@ public class MultiKeySubCommand extends SignerSubCommand {
   @Option(
       names = {"-d", "--directory"},
       description = "The path to a directory containing signing metadata TOML files",
-      required = false,
+      required = true,
       paramLabel = MANDATORY_PATH_FORMAT_HELP,
       arity = "1")
   private Path directoryPath;
@@ -96,28 +98,53 @@ public class MultiKeySubCommand extends SignerSubCommand {
   @Override
   public TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException {
+    final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader =
+        new SigningMetadataTomlConfigLoader(directoryPath);
     switch (identifier) {
       case IDENTIFIER_FILE_BASED:
         {
-          final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader =
-              new SigningMetadataTomlConfigLoader(directoryPath);
           return new MultiKeyTransactionSignerProvider(signingMetadataTomlConfigLoader, null, null);
         }
       case IDENTIFIER_AZURE:
         {
           final AzureKeyVaultTransactionSignerFactory azureFactory =
               new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
-          return new MultiKeyTransactionSignerProvider(null, azureFactory, null);
+          return new MultiKeyTransactionSignerProvider(
+              signingMetadataTomlConfigLoader, azureFactory, null);
         }
       case IDENTIFIER_HSM:
         {
           final HSMTransactionSignerFactory hsmFactory =
               new HSMTransactionSignerFactory(
                   new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
-          return new MultiKeyTransactionSignerProvider(null, null, hsmFactory);
+          return new MultiKeyTransactionSignerProvider(
+              signingMetadataTomlConfigLoader, null, hsmFactory);
         }
     }
     throw new TransactionSignerInitializationException("Incorrect identifier");
+  }
+
+  @Override
+  public KeyGeneratorProvider createGeneratorFactory() throws KeyGeneratorInitializationException {
+    //    switch (identifier) {
+    //      case IDENTIFIER_FILE_BASED:
+    //      {
+    //        return null;
+    //      }
+    //      case IDENTIFIER_AZURE:
+    //      {
+    //        return null;
+    //      }
+    //      case IDENTIFIER_HSM:
+    //      {
+    //        final HSMKeyGeneratorFactory hsmFactory =
+    //                new HSMKeyGeneratorFactory(
+    //                        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
+    //        return hsmFactory;
+    //      }
+    //    }
+    //    throw new KeyGeneratorInitializationException("Incorrect identifier");
+    return null;
   }
 
   @Override

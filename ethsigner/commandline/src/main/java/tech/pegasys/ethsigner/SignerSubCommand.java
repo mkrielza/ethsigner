@@ -14,6 +14,7 @@ package tech.pegasys.ethsigner;
 
 import tech.pegasys.ethsigner.core.EthSigner;
 import tech.pegasys.ethsigner.core.InitializationException;
+import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +30,9 @@ public abstract class SignerSubCommand implements Runnable {
 
   public abstract TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException;
+
+  public abstract KeyGeneratorProvider createGeneratorFactory()
+      throws KeyGeneratorInitializationException;
 
   public abstract String getCommandName();
 
@@ -50,7 +54,7 @@ public abstract class SignerSubCommand implements Runnable {
     LOG.debug("Configuration = {}", this);
     LOG.info("Version = {}", ApplicationInfo.version());
 
-    final EthSigner signer = new EthSigner(config, createSignerFactory(), null);
+    final EthSigner signer = new EthSigner(config, createSignerFactory(), createGeneratorFactory());
     signer.run();
   }
 }

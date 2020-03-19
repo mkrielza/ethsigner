@@ -17,8 +17,10 @@ import static tech.pegasys.ethsigner.DefaultCommandValues.MANDATORY_HOST_FORMAT_
 import static tech.pegasys.ethsigner.DefaultCommandValues.MANDATORY_LONG_FORMAT_HELP;
 import static tech.pegasys.ethsigner.DefaultCommandValues.MANDATORY_PORT_FORMAT_HELP;
 
+import tech.pegasys.ethsigner.KeyGeneratorInitializationException;
 import tech.pegasys.ethsigner.SignerSubCommand;
 import tech.pegasys.ethsigner.TransactionSignerInitializationException;
+import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.SingleTransactionSignerProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
@@ -117,6 +119,11 @@ public class HashicorpSubCommand extends SignerSubCommand {
   public TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException {
     return new SingleTransactionSignerProvider(createSigner());
+  }
+
+  @Override
+  public KeyGeneratorProvider createGeneratorFactory() throws KeyGeneratorInitializationException {
+    return null;
   }
 
   @Override

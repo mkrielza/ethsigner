@@ -12,6 +12,7 @@
  */
 package tech.pegasys.ethsigner;
 
+import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 
@@ -48,6 +49,11 @@ public class NullSignerSubCommand extends SignerSubCommand {
   public TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException {
     return new EmptyTransactionSignerProvider();
+  }
+
+  @Override
+  public KeyGeneratorProvider createGeneratorFactory() throws KeyGeneratorInitializationException {
+    return null;
   }
 
   @Override

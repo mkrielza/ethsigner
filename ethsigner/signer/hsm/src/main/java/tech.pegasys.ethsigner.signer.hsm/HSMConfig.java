@@ -15,86 +15,42 @@ package tech.pegasys.ethsigner.signer.hsm;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HSMConfig {
-  private final String keyVaultName;
   private final String address;
-  private final String keyVersion;
-  private final String clientId;
-  private final String clientSecret;
+  private final String slotIndex;
 
-  public HSMConfig(
-      final String keyVaultName,
-      final String keyName,
-      final String keyVersion,
-      final String clientId,
-      final String clientSecret) {
-    this.keyVaultName = keyVaultName;
-    this.address = keyName;
-    this.keyVersion = keyVersion;
-    this.clientId = clientId;
-    this.clientSecret = clientSecret;
-  }
+  public HSMConfig(final String address, final String slotIndex) {
 
-  public String getKeyVaultName() {
-    return keyVaultName;
+    this.address = address;
+    this.slotIndex = slotIndex;
   }
 
   public String getAddress() {
     return address;
   }
 
-  public String getKeyVersion() {
-    return keyVersion;
+  public String getSlotIndex() {
+    return slotIndex;
   }
 
-  public String getClientId() {
-    return clientId;
-  }
+  public static class HSMConfigBuilder {
+    private String address;
+    private String slotIndex;
 
-  public String getClientSecret() {
-    return clientSecret;
-  }
-
-  public static class AzureConfigBuilder {
-
-    private String keyVaultName;
-    private String keyName;
-    private String keyVersion;
-    private String clientId;
-    private String clientSecret;
-
-    public AzureConfigBuilder withKeyVaultName(final String keyVaultName) {
-      this.keyVaultName = keyVaultName;
+    public HSMConfigBuilder withAddress(final String keyName) {
+      this.address = keyName;
       return this;
     }
 
-    public AzureConfigBuilder withKeyName(final String keyName) {
-      this.keyName = keyName;
-      return this;
-    }
-
-    public AzureConfigBuilder withKeyVersion(final String keyVersion) {
-      this.keyVersion = keyVersion;
-      return this;
-    }
-
-    public AzureConfigBuilder withClientId(final String clientId) {
-      this.clientId = clientId;
-      return this;
-    }
-
-    public AzureConfigBuilder withClientSecret(String clientSecret) {
-      this.clientSecret = clientSecret;
+    public HSMConfigBuilder withSlotIndex(final String keyVersion) {
+      this.slotIndex = keyVersion;
       return this;
     }
 
     public HSMConfig build() {
-      checkNotNull(keyVaultName, "Key Vault Name was not set.");
-      checkNotNull(keyName, "Key Name was not set.");
-      checkNotNull(keyVersion, "Key Version was not set.");
-      checkNotNull(clientId, "Client Id was not set.");
-      checkNotNull(clientSecret, "Client Secret was not set.");
+      checkNotNull(address, "Address was not set.");
+      checkNotNull(slotIndex, "Slot index was not set.");
 
-      return new HSMConfig(keyVaultName, keyName, keyVersion, clientId, clientSecret);
+      return new HSMConfig(address, slotIndex);
     }
   }
 }

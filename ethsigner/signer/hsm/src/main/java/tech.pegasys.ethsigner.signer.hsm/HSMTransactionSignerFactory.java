@@ -25,4 +25,8 @@ public class HSMTransactionSignerFactory {
   public TransactionSigner createSigner(String address) {
     return new HSMTransactionSigner(provider, address);
   }
+
+  public String getSlotIndex() {
+    return provider.getSlotIndex();
+  }
 }

@@ -12,25 +12,6 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.sec.SECNamedCurves;
-import org.bouncycastle.asn1.x500.X500Name;
-import org.bouncycastle.asn1.x509.BasicConstraints;
-import org.bouncycastle.asn1.x509.Extension;
-import org.bouncycastle.asn1.x509.KeyPurposeId;
-import org.bouncycastle.asn1.x509.KeyUsage;
-import org.bouncycastle.asn1.x9.X9ECParameters;
-import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
-import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
-import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.operator.ContentSigner;
-import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
-import org.web3j.crypto.Keys;
-import org.web3j.crypto.Sign;
 import tech.pegasys.ethsigner.core.generation.KeyGenerator;
 
 import java.math.BigInteger;
@@ -54,12 +35,32 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.bouncycastle.asn1.ASN1EncodableVector;
+import org.bouncycastle.asn1.DERSequence;
+import org.bouncycastle.asn1.sec.SECNamedCurves;
+import org.bouncycastle.asn1.x500.X500Name;
+import org.bouncycastle.asn1.x509.BasicConstraints;
+import org.bouncycastle.asn1.x509.Extension;
+import org.bouncycastle.asn1.x509.KeyPurposeId;
+import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x9.X9ECParameters;
+import org.bouncycastle.cert.X509v3CertificateBuilder;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
+import org.bouncycastle.cert.jcajce.JcaX509v3CertificateBuilder;
+import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.operator.ContentSigner;
+import org.bouncycastle.operator.jcajce.JcaContentSignerBuilder;
+import org.web3j.crypto.Keys;
+import org.web3j.crypto.Sign;
+
 public class HSMKeyGenerator implements KeyGenerator {
 
   private static final Logger LOG = LogManager.getLogger();
   private static final String CURVE = "secp256k1";
-  //private static final String CURVE = "secp256r1";
-  //private static final String CURVE = "secp384r1";
+  // private static final String CURVE = "secp256r1";
+  // private static final String CURVE = "secp384r1";
   private static final String ALGORITHM = "SHA256withECDSA";
 
   private final HSMKeyStoreProvider provider;
@@ -83,8 +84,8 @@ public class HSMKeyGenerator implements KeyGenerator {
   }
 
   public List<String> getAll() {
-   List<String> result = new ArrayList<>();
-   KeyStore ks = provider.getKeyStore();
+    List<String> result = new ArrayList<>();
+    KeyStore ks = provider.getKeyStore();
     try {
       for (Enumeration<String> aliases = ks.aliases(); aliases.hasMoreElements(); ) {
         String address = aliases.nextElement();
@@ -127,8 +128,7 @@ public class HSMKeyGenerator implements KeyGenerator {
     return privateKey != null;
   }
 
-  private String generateKey(Provider p, KeyStore ks, String algo, String curve)
-          throws Exception {
+  private String generateKey(Provider p, KeyStore ks, String algo, String curve) throws Exception {
     // Generate an EC key pair using the provider to force generation on the HSM instead of
     // software.
     KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("EC", p);
@@ -151,7 +151,7 @@ public class HSMKeyGenerator implements KeyGenerator {
   }
 
   private X509Certificate generateCertificate(
-          KeyPair pair, int days, String algorithm, String dn, Provider p) throws Exception {
+      KeyPair pair, int days, String algorithm, String dn, Provider p) throws Exception {
     X500Name issuerName = new X500Name(dn);
     BigInteger serial = BigInteger.valueOf(new SecureRandom().nextInt()).abs();
     Calendar calendar = Calendar.getInstance();
@@ -161,17 +161,17 @@ public class HSMKeyGenerator implements KeyGenerator {
 
     Date endDate = calendar.getTime();
     X509v3CertificateBuilder builder =
-            new JcaX509v3CertificateBuilder(
-                    issuerName, serial, startDate, endDate, issuerName, pair.getPublic());
+        new JcaX509v3CertificateBuilder(
+            issuerName, serial, startDate, endDate, issuerName, pair.getPublic());
     builder.addExtension(Extension.basicConstraints, true, new BasicConstraints(true));
 
     KeyUsage usage =
-            new KeyUsage(
-                    KeyUsage.keyCertSign
-                            | KeyUsage.digitalSignature
-                            | KeyUsage.keyEncipherment
-                            | KeyUsage.dataEncipherment
-                            | KeyUsage.cRLSign);
+        new KeyUsage(
+            KeyUsage.keyCertSign
+                | KeyUsage.digitalSignature
+                | KeyUsage.keyEncipherment
+                | KeyUsage.dataEncipherment
+                | KeyUsage.cRLSign);
     builder.addExtension(Extension.keyUsage, false, usage);
 
     ASN1EncodableVector purposes = new ASN1EncodableVector();
@@ -180,7 +180,7 @@ public class HSMKeyGenerator implements KeyGenerator {
     purposes.add(KeyPurposeId.anyExtendedKeyUsage);
     builder.addExtension(Extension.extendedKeyUsage, false, new DERSequence(purposes));
     ContentSigner contentSigner =
-            new JcaContentSignerBuilder(algorithm).setProvider(p).build(pair.getPrivate());
+        new JcaContentSignerBuilder(algorithm).setProvider(p).build(pair.getPrivate());
 
     JcaX509CertificateConverter converter = new JcaX509CertificateConverter();
     X509Certificate cert = converter.getCertificate(builder.build(contentSigner));
@@ -195,7 +195,7 @@ public class HSMKeyGenerator implements KeyGenerator {
     final BigInteger y = w.getAffineY();
     X9ECParameters params = SECNamedCurves.getByName(curve);
     ECDomainParameters ec =
-            new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
+        new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
     return ec.getCurve().createPoint(x, y).getEncoded(false);
   }
 }

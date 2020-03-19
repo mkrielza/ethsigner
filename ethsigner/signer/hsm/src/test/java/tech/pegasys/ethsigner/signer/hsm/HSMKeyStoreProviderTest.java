@@ -11,32 +11,25 @@
  * specific language governing permissions and limitations under the License.
  */
 package tech.pegasys.ethsigner.signer.hsm;
+/*
 
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.UnrecoverableEntryException;
-import java.util.List;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+class HSMKeyStoreProviderTest {
 
-import static org.assertj.core.api.Assertions.assertThat;
+  private static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
+  private static String slot = "992881475";
+  private static String pin = "us3rs3cur3";
 
-public class HSMKeyStoreProviderTest {
+  private HSMKeyStoreProvider ksp;
+  private HSMKeyGenerator kgr;
 
-  public static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
-  public static String slot = "992881475";
-  public static String pin = "us3rs3cur3";
-
-
-  @BeforeAll
-  public static void setup() {}
+  @BeforeEach
+  void beforeEach() {
+    ksp = new HSMKeyStoreProvider(library, slot, pin);
+    kgr = new HSMKeyGenerator(ksp);
+  }
 
   @Test
-  public void generateTest() {
-    HSMKeyStoreProvider ksp = new HSMKeyStoreProvider(library, slot, pin);
-    HSMKeyGenerator kgr = new HSMKeyGenerator(ksp);
+  void generateTest() {
     String address = kgr.generate();
     System.out.println("Generated: " + address);
     boolean exists = kgr.exists(address);
@@ -47,32 +40,32 @@ public class HSMKeyStoreProviderTest {
     try {
       privateKeyEntry = (KeyStore.PrivateKeyEntry) ksp.getKeyStore().getEntry(address, null);
     } catch (NoSuchAlgorithmException | UnrecoverableEntryException | KeyStoreException e) {
+      fail("Failed to retrieve private key handle");
     }
     assertThat(privateKeyEntry).isNotNull();
     PrivateKey privateKey = privateKeyEntry.getPrivateKey();
     assertThat(privateKey).isNotNull();
-    /*
+
     // Sign some data
-    Signature sig = Signature.getInstance("SHA256withECDSA", ksp.getProvider());
-    sig.initSign(privateKey);
-    byte[] data = "test".getBytes(Charset.defaultCharset());
-    sig.update(data);
-    byte[] s = sig.sign();
-    System.out.println("Signed with hardware key.");
+    // Signature sig = Signature.getInstance("SHA256withECDSA", ksp.getProvider());
+    // sig.initSign(privateKey);
+    // byte[] data = "test".getBytes(Charset.defaultCharset());
+    // sig.update(data);
+    // byte[] s = sig.sign();
+    // System.out.println("Signed with hardware key.");
 
     // Verify the signature
-    sig.initVerify(keyPair.getPublic());
-    sig.update(data);
-    if (!sig.verify(s)) {
-      throw new Exception("Signature did not verify");
-    }
-    System.out.println("Verified with hardware key.");
-    */
+    // sig.initVerify(keyPair.getPublic());
+    // sig.update(data);
+    // if (!sig.verify(s)) {
+    //  throw new Exception("Signature did not verify");
+    // }
+    // System.out.println("Verified with hardware key.");
+
   }
+
   @Test
-  public void getAllTest() {
-    HSMKeyStoreProvider ksp = new HSMKeyStoreProvider(library, slot, pin);
-    HSMKeyGenerator kgr = new HSMKeyGenerator(ksp);
+  void getAllTest() {
     String address = kgr.generate();
     System.out.println("Generated: " + address);
     List<String> addresses = kgr.getAll();
@@ -82,3 +75,4 @@ public class HSMKeyStoreProviderTest {
     }
   }
 }
+*/
