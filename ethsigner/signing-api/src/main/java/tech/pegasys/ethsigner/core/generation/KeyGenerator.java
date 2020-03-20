@@ -15,4 +15,6 @@ package tech.pegasys.ethsigner.core.generation;
 public interface KeyGenerator {
 
   String generate();
+
+  String metaData(String address);
 }

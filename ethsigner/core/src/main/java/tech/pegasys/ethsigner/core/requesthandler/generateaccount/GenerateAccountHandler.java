@@ -12,11 +12,17 @@
  */
 package tech.pegasys.ethsigner.core.requesthandler.generateaccount;
 
+import tech.pegasys.ethsigner.core.generation.KeyGenerator;
 import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.http.HttpResponseFactory;
 import tech.pegasys.ethsigner.core.jsonrpc.JsonRpcRequest;
 import tech.pegasys.ethsigner.core.jsonrpc.response.JsonRpcSuccessResponse;
 import tech.pegasys.ethsigner.core.requesthandler.JsonRpcRequestHandler;
+
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import io.netty.handler.codec.http.HttpResponseStatus;
 import io.vertx.ext.web.RoutingContext;
@@ -39,7 +45,17 @@ public class GenerateAccountHandler implements JsonRpcRequestHandler {
   @Override
   public void handle(final RoutingContext context, final JsonRpcRequest request) {
     LOG.debug("Generating account request {}, {}", request.getId(), request.getMethod());
-    final String address = keyGeneratorProvider.getGenerator().generate();
+    final KeyGenerator generator = keyGeneratorProvider.getGenerator();
+    final Path directory = keyGeneratorProvider.getDirectory();
+    final String address = generator.generate();
+    final String metaData = generator.metaData(address);
+    final String toml = address.substring(2).toLowerCase();
+    final Path tomlFile = directory.resolve(String.format("%s.toml", toml));
+    try {
+      Files.write(Files.createFile(tomlFile), metaData.getBytes(Charset.defaultCharset()));
+    } catch (IOException ex) {
+      LOG.trace(ex);
+    }
     final JsonRpcSuccessResponse response = new JsonRpcSuccessResponse(request.getId(), address);
     responder.create(context.request(), HttpResponseStatus.OK.code(), response);
   }

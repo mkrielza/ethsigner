@@ -12,13 +12,11 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -34,7 +32,6 @@ public class HSMKeyStoreProvider {
   private static final Logger LOG = LogManager.getLogger();
   private static final String ERROR_CREATING_TMP_FILE_MESSAGE =
       "Failed to create a temp config file";
-  private static final String ERROR_ACCESSING_TMP_FILE_MESSAGE = "Failed to access config file";
   private static final String ERROR_INITIALIZING_PKCS11_KEYSTORE_MESSAGE =
       "Failed to initialize key store";
   private static final String ERROR_ACCESSING_PKCS11_KEYSTORE_MESSAGE =
@@ -45,32 +42,26 @@ public class HSMKeyStoreProvider {
   private String slotIndex;
 
   public HSMKeyStoreProvider(final String library, final String slot, final String pin) {
-    File tmpConfigFile;
+    final StringBuilder sb = new StringBuilder();
+    sb.append(String.format("name = %s\n", "HSM"));
+    sb.append(String.format("library = %s\n", library));
+    sb.append(String.format("slot = %s\n", slot));
+    sb.append("attributes(generate, *, *) = { CKA_TOKEN = true }\n");
+    sb.append("attributes(generate, CKO_CERTIFICATE, *) = { CKA_PRIVATE=false }\n");
+    sb.append("attributes(generate, CKO_PUBLIC_KEY, *) = { CKA_PRIVATE=false }\n");
+    final String configContent = sb.toString();
+    final String configName;
     try {
-      tmpConfigFile = File.createTempFile("pkcs11-", ".cfg");
+      Path configPath = Files.createTempFile("pkcs11-", ".cfg");
+      File configFile = configPath.toFile();
+      configName = configFile.getAbsolutePath();
+      configFile.deleteOnExit();
+      Files.write(configPath, configContent.getBytes(Charset.defaultCharset()));
     } catch (IOException ex) {
       LOG.debug(ERROR_CREATING_TMP_FILE_MESSAGE);
       LOG.trace(ex);
       throw new HSMKeyStoreInitializationException(ERROR_CREATING_TMP_FILE_MESSAGE, ex);
     }
-    tmpConfigFile.deleteOnExit();
-    try (OutputStreamWriter ow =
-            new OutputStreamWriter(new FileOutputStream(tmpConfigFile), Charset.defaultCharset());
-        BufferedWriter bw = new BufferedWriter(ow);
-        PrintWriter cw = new PrintWriter(bw, true); ) {
-      cw.println(String.format("name=%s", "HSM"));
-      cw.println(String.format("library=%s", library));
-      cw.println(String.format("slot=%s", slot));
-      cw.println("attributes(generate, *, *) = { CKA_TOKEN = true }");
-      cw.println("attributes(generate, CKO_CERTIFICATE, *) = { CKA_PRIVATE=false }");
-      cw.println("attributes(generate, CKO_PUBLIC_KEY, *) = { CKA_PRIVATE=false }");
-    } catch (IOException ex) {
-      LOG.debug(ERROR_ACCESSING_TMP_FILE_MESSAGE);
-      LOG.trace(ex);
-      throw new HSMKeyStoreInitializationException(ERROR_ACCESSING_TMP_FILE_MESSAGE, ex);
-    }
-    String configName = tmpConfigFile.getAbsolutePath();
-
     Provider prototype = Security.getProvider("SunPKCS11");
     provider = prototype.configure(configName);
     slotIndex = slot;

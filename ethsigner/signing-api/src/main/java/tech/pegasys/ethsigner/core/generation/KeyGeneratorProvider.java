@@ -12,7 +12,11 @@
  */
 package tech.pegasys.ethsigner.core.generation;
 
+import java.nio.file.Path;
+
 public interface KeyGeneratorProvider {
 
   KeyGenerator getGenerator();
+
+  Path getDirectory();
 }

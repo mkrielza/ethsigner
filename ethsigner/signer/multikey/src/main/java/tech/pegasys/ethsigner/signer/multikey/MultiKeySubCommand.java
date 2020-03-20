@@ -136,7 +136,7 @@ public class MultiKeySubCommand extends SignerSubCommand {
       case IDENTIFIER_HSM:
         {
           return new HSMKeyGeneratorFactory(
-              new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
+              new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin), directoryPath);
         }
     }
     throw new KeyGeneratorInitializationException("Incorrect identifier");

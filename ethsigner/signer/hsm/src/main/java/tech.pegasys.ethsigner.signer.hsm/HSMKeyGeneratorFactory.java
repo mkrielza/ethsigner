@@ -14,16 +14,25 @@ package tech.pegasys.ethsigner.signer.hsm;
 
 import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 
+import java.nio.file.Path;
+
 public class HSMKeyGeneratorFactory implements KeyGeneratorProvider {
 
   private final HSMKeyStoreProvider provider;
+  private final Path directory;
 
-  public HSMKeyGeneratorFactory(final HSMKeyStoreProvider provider) {
+  public HSMKeyGeneratorFactory(final HSMKeyStoreProvider provider, final Path directory) {
     this.provider = provider;
+    this.directory = directory;
   }
 
   @Override
   public HSMKeyGenerator getGenerator() {
     return new HSMKeyGenerator(provider);
+  }
+
+  @Override
+  public Path getDirectory() {
+    return directory;
   }
 }

@@ -29,6 +29,8 @@ import java.security.cert.X509Certificate;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECGenParameterSpec;
 import java.security.spec.ECPoint;
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -81,6 +83,21 @@ public class HSMKeyGenerator implements KeyGenerator {
       LOG.trace(ex);
     }
     return address;
+  }
+
+  @Override
+  public String metaData(final String address) {
+    final String createdAt = DateTimeFormatter.ISO_INSTANT.format(Instant.now());
+    final StringBuilder sb = new StringBuilder();
+    sb.append(String.format("[%s]\n", "metadata"));
+    sb.append(String.format("%s = %s\n", "createdAt", createdAt));
+    sb.append(String.format("%s = \"%s\"\n", "description", "HSM configuration"));
+    sb.append(String.format("\n"));
+    sb.append(String.format("[%s]\n", "signing"));
+    sb.append(String.format("%s = \"%s\"\n", "type", "hsm-signer"));
+    sb.append(String.format("%s = \"%s\"\n", "address", address));
+    sb.append(String.format("%s = \"%s\"\n", "slotIndex", provider.getSlotIndex()));
+    return sb.toString();
   }
 
   public List<String> getAll() {
