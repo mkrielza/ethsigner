@@ -14,14 +14,11 @@ package tech.pegasys.ethsigner.signer.multikey;
 
 import static tech.pegasys.ethsigner.DefaultCommandValues.MANDATORY_PATH_FORMAT_HELP;
 
-import tech.pegasys.ethsigner.KeyGeneratorInitializationException;
 import tech.pegasys.ethsigner.SignerSubCommand;
 import tech.pegasys.ethsigner.TransactionSignerInitializationException;
-import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
-import tech.pegasys.ethsigner.signer.hsm.HSMKeyGeneratorFactory;
 import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
 import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
@@ -60,14 +57,6 @@ public class MultiKeySubCommand extends SignerSubCommand {
   private CommandLine.Model.CommandSpec spec;
 
   @Option(
-      names = {"-i", "--identifier"},
-      description = "The identifier for the multikey signer to be used",
-      required = true,
-      paramLabel = "<IDENTIFIER>",
-      arity = "1")
-  private String identifier;
-
-  @Option(
       names = {"-d", "--directory"},
       description = "The path to a directory containing signing metadata TOML files",
       required = true,
@@ -101,45 +90,14 @@ public class MultiKeySubCommand extends SignerSubCommand {
       throws TransactionSignerInitializationException {
     final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader =
         new SigningMetadataTomlConfigLoader(directoryPath);
-    switch (identifier) {
-      case IDENTIFIER_FILE_BASED:
-        {
-          return new MultiKeyTransactionSignerProvider(signingMetadataTomlConfigLoader, null, null);
-        }
-      case IDENTIFIER_AZURE:
-        {
-          final AzureKeyVaultTransactionSignerFactory azureFactory =
-              new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
-          return new MultiKeyTransactionSignerProvider(
-              signingMetadataTomlConfigLoader, azureFactory, null);
-        }
-      case IDENTIFIER_HSM:
-        {
-          final HSMTransactionSignerFactory hsmFactory =
-              new HSMTransactionSignerFactory(
-                  new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin));
-          return new MultiKeyTransactionSignerProvider(
-              signingMetadataTomlConfigLoader, null, hsmFactory);
-        }
-    }
-    throw new TransactionSignerInitializationException("Incorrect identifier");
-  }
-
-  @Override
-  public KeyGeneratorProvider createGeneratorFactory() throws KeyGeneratorInitializationException {
-    switch (identifier) {
-      case IDENTIFIER_FILE_BASED:
-      case IDENTIFIER_AZURE:
-        {
-          return null;
-        }
-      case IDENTIFIER_HSM:
-        {
-          return new HSMKeyGeneratorFactory(
-              new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin), directoryPath);
-        }
-    }
-    throw new KeyGeneratorInitializationException("Incorrect identifier");
+    final AzureKeyVaultTransactionSignerFactory azureFactory =
+        new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
+    final HSMTransactionSignerFactory hsmFactory =
+        new HSMTransactionSignerFactory(
+            new HSMKeyStoreProvider(
+                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
+    return new MultiKeyTransactionSignerProvider(
+        signingMetadataTomlConfigLoader, azureFactory, hsmFactory);
   }
 
   @Override

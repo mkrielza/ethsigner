@@ -15,7 +15,6 @@ package tech.pegasys.ethsigner.core;
 import tech.pegasys.ethsigner.core.config.ClientAuthConstraints;
 import tech.pegasys.ethsigner.core.config.Config;
 import tech.pegasys.ethsigner.core.config.TlsOptions;
-import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.jsonrpc.JsonDecoder;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.core.util.FileUtil;
@@ -41,16 +40,11 @@ public final class EthSigner {
 
   private final Config config;
   private final TransactionSignerProvider transactionSignerProvider;
-  private final KeyGeneratorProvider keyGeneratorProvider;
   private final WebClientOptionsFactory webClientOptionsFactory = new WebClientOptionsFactory();
 
-  public EthSigner(
-      final Config config,
-      final TransactionSignerProvider transactionSignerProvider,
-      final KeyGeneratorProvider keyGeneratorProvider) {
+  public EthSigner(final Config config, final TransactionSignerProvider transactionSignerProvider) {
     this.config = config;
     this.transactionSignerProvider = transactionSignerProvider;
-    this.keyGeneratorProvider = keyGeneratorProvider;
   }
 
   public void run() {
@@ -82,7 +76,6 @@ public final class EthSigner {
           new Runner(
               config.getChainId().id(),
               transactionSignerProvider,
-              keyGeneratorProvider,
               webClientOptionsFactory.createWebClientOptions(config),
               applyConfigTlsSettingsTo(serverOptions),
               downstreamHttpRequestTimeout,

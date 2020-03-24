@@ -12,7 +12,6 @@
  */
 package tech.pegasys.ethsigner.core;
 
-import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.http.HttpResponseFactory;
 import tech.pegasys.ethsigner.core.http.HttpServerService;
 import tech.pegasys.ethsigner.core.http.JsonRpcErrorHandler;
@@ -23,7 +22,6 @@ import tech.pegasys.ethsigner.core.http.UpcheckHandler;
 import tech.pegasys.ethsigner.core.jsonrpc.JsonDecoder;
 import tech.pegasys.ethsigner.core.requesthandler.VertxRequestTransmitter;
 import tech.pegasys.ethsigner.core.requesthandler.VertxRequestTransmitterFactory;
-import tech.pegasys.ethsigner.core.requesthandler.generateaccount.GenerateAccountHandler;
 import tech.pegasys.ethsigner.core.requesthandler.internalresponse.EthAccountsBodyProvider;
 import tech.pegasys.ethsigner.core.requesthandler.internalresponse.InternalResponseHandler;
 import tech.pegasys.ethsigner.core.requesthandler.passthrough.PassThroughHandler;
@@ -59,7 +57,6 @@ public class Runner {
 
   private final long chainId;
   private final TransactionSignerProvider transactionSignerProvider;
-  private final KeyGeneratorProvider keyGeneratorProvider;
   private final HttpClientOptions clientOptions;
   private final Duration httpRequestTimeout;
   private final HttpResponseFactory responseFactory = new HttpResponseFactory();
@@ -71,7 +68,6 @@ public class Runner {
   public Runner(
       final long chainId,
       final TransactionSignerProvider transactionSignerProvider,
-      final KeyGeneratorProvider keyGeneratorProvider,
       final HttpClientOptions clientOptions,
       final HttpServerOptions serverOptions,
       final Duration httpRequestTimeout,
@@ -80,7 +76,6 @@ public class Runner {
       final Vertx vertx) {
     this.chainId = chainId;
     this.transactionSignerProvider = transactionSignerProvider;
-    this.keyGeneratorProvider = keyGeneratorProvider;
     this.clientOptions = clientOptions;
     this.httpRequestTimeout = httpRequestTimeout;
     this.jsonDecoder = jsonDecoder;
@@ -156,11 +151,6 @@ public class Runner {
             responseFactory,
             new EthAccountsBodyProvider(transactionSignerProvider::availableAddresses),
             jsonDecoder));
-    if (keyGeneratorProvider != null) {
-      final GenerateAccountHandler generateAccountHandler =
-          new GenerateAccountHandler(keyGeneratorProvider, responseFactory);
-      requestMapper.addHandler("eth_generateAccount", generateAccountHandler);
-    }
     return requestMapper;
   }
 

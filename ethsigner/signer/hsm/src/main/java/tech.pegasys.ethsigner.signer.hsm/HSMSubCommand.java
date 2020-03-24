@@ -12,10 +12,8 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import tech.pegasys.ethsigner.KeyGeneratorInitializationException;
 import tech.pegasys.ethsigner.SignerSubCommand;
 import tech.pegasys.ethsigner.TransactionSignerInitializationException;
-import tech.pegasys.ethsigner.core.generation.KeyGeneratorProvider;
 import tech.pegasys.ethsigner.core.signing.SingleTransactionSignerProvider;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
@@ -73,13 +71,6 @@ public class HSMSubCommand extends SignerSubCommand {
   private String ethAddress;
 
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
-    //    final String pin;
-    //    try {
-    //      pin = readPinFromFile(pinPath);
-    //    } catch (final IOException e) {
-    //      throw new TransactionSignerInitializationException(READ_PIN_FILE_ERROR, e);
-    //    }
-
     final HSMKeyStoreProvider provider =
         new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
     final HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(provider);
@@ -90,11 +81,6 @@ public class HSMSubCommand extends SignerSubCommand {
   public TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException {
     return new SingleTransactionSignerProvider(createSigner());
-  }
-
-  @Override
-  public KeyGeneratorProvider createGeneratorFactory() throws KeyGeneratorInitializationException {
-    return null;
   }
 
   @Override
@@ -110,9 +96,4 @@ public class HSMSubCommand extends SignerSubCommand {
         .add("address", ethAddress)
         .toString();
   }
-
-  //  private static String readPinFromFile(final Path path) throws IOException {
-  //    final byte[] fileContent = Files.readAllBytes(path);
-  //    return new String(fileContent, UTF_8);
-  //  }
 }

@@ -39,7 +39,9 @@ public class HSMKeyStoreProvider {
 
   private Provider provider;
   private KeyStore keyStore;
+  private String configName;
   private String slotIndex;
+  private String slotPin;
 
   public HSMKeyStoreProvider(final String library, final String slot, final String pin) {
     final StringBuilder sb = new StringBuilder();
@@ -50,7 +52,6 @@ public class HSMKeyStoreProvider {
     sb.append("attributes(generate, CKO_CERTIFICATE, *) = { CKA_PRIVATE=false }\n");
     sb.append("attributes(generate, CKO_PUBLIC_KEY, *) = { CKA_PRIVATE=false }\n");
     final String configContent = sb.toString();
-    final String configName;
     try {
       Path configPath = Files.createTempFile("pkcs11-", ".cfg");
       File configFile = configPath.toFile();
@@ -62,9 +63,13 @@ public class HSMKeyStoreProvider {
       LOG.trace(ex);
       throw new HSMKeyStoreInitializationException(ERROR_CREATING_TMP_FILE_MESSAGE, ex);
     }
+    slotIndex = slot;
+    slotPin = pin;
+  }
+
+  private void initialize() throws HSMKeyStoreInitializationException {
     Provider prototype = Security.getProvider("SunPKCS11");
     provider = prototype.configure(configName);
-    slotIndex = slot;
     try {
       keyStore = KeyStore.getInstance("PKCS11", provider);
     } catch (KeyStoreException ex) {
@@ -73,20 +78,22 @@ public class HSMKeyStoreProvider {
       throw new HSMKeyStoreInitializationException(ERROR_INITIALIZING_PKCS11_KEYSTORE_MESSAGE, ex);
     }
     try {
-      keyStore.load(null, pin.toCharArray());
+      keyStore.load(null, slotPin.toCharArray());
     } catch (IOException | NoSuchAlgorithmException | CertificateException ex) {
       LOG.debug(ERROR_ACCESSING_PKCS11_KEYSTORE_MESSAGE);
       LOG.trace(ex);
       throw new HSMKeyStoreInitializationException(ERROR_ACCESSING_PKCS11_KEYSTORE_MESSAGE, ex);
     }
-    LOG.debug("Successfully initialized slot");
+    LOG.debug("Successfully initialized hsm slot");
   }
 
   public KeyStore getKeyStore() {
+    if (keyStore == null) initialize();
     return keyStore;
   }
 
   public Provider getProvider() {
+    if (provider == null) initialize();
     return provider;
   }
 
