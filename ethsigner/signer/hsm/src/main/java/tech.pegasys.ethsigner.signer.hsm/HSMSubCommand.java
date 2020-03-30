@@ -76,7 +76,11 @@ public class HSMSubCommand extends SignerSubCommand {
         new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
     final HSMTransactionSignerFactory factory =
         new HSMTransactionSignerFactory(provider, Vertx.vertx());
-    return factory.createSigner(ethAddress);
+    try {
+      return factory.createSigner(ethAddress);
+    } finally {
+      factory.shutdown();
+    }
   }
 
   @Override
