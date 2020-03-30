@@ -56,7 +56,7 @@ public class HSMKeyStoreProvider {
       Path configPath = Files.createTempFile("pkcs11-", ".cfg");
       File configFile = configPath.toFile();
       configName = configFile.getAbsolutePath();
-      configFile.deleteOnExit();
+      // configFile.deleteOnExit();
       Files.write(configPath, configContent.getBytes(Charset.defaultCharset()));
     } catch (IOException ex) {
       LOG.debug(ERROR_CREATING_TMP_FILE_MESSAGE);
@@ -69,8 +69,8 @@ public class HSMKeyStoreProvider {
 
   private void initialize() throws HSMKeyStoreInitializationException {
     Provider prototype = Security.getProvider("SunPKCS11");
-    provider = prototype.configure(configName);
     try {
+      provider = prototype.configure(configName);
       keyStore = KeyStore.getInstance("PKCS11", provider);
     } catch (KeyStoreException ex) {
       LOG.debug(ERROR_INITIALIZING_PKCS11_KEYSTORE_MESSAGE);
@@ -87,12 +87,12 @@ public class HSMKeyStoreProvider {
     LOG.debug("Successfully initialized hsm slot");
   }
 
-  public KeyStore getKeyStore() {
+  public KeyStore getKeyStore() throws HSMKeyStoreInitializationException {
     if (keyStore == null) initialize();
     return keyStore;
   }
 
-  public Provider getProvider() {
+  public Provider getProvider() throws HSMKeyStoreInitializationException {
     if (provider == null) initialize();
     return provider;
   }
