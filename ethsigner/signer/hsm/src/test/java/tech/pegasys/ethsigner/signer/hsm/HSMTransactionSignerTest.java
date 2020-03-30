@@ -17,7 +17,6 @@ import static org.mockito.Mockito.mock;
 
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
-import io.vertx.core.Vertx;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
@@ -32,8 +31,7 @@ public class HSMTransactionSignerTest {
 
   @Test
   public void success() {
-    final TransactionSigner signer =
-        (new HSMTransactionSignerFactory(ksp, Vertx.vertx())).createSigner("0x");
+    final TransactionSigner signer = (new HSMTransactionSignerFactory(ksp)).createSigner("0x");
 
     assertThat(signer).isNotNull();
     assertThat(signer.getAddress()).isNotEmpty();

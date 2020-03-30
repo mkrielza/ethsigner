@@ -14,16 +14,12 @@ package tech.pegasys.ethsigner.signer.hsm;
 
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
-import io.vertx.core.Vertx;
-
 public class HSMTransactionSignerFactory {
 
   private final HSMKeyStoreProvider provider;
-  private Vertx vertx;
 
-  public HSMTransactionSignerFactory(final HSMKeyStoreProvider provider, final Vertx vertx) {
+  public HSMTransactionSignerFactory(final HSMKeyStoreProvider provider) {
     this.provider = provider;
-    this.vertx = vertx;
   }
 
   public TransactionSigner createSigner(String address) {
@@ -32,12 +28,5 @@ public class HSMTransactionSignerFactory {
 
   public String getSlotIndex() {
     return provider.getSlotIndex();
-  }
-
-  public void shutdown() {
-    if (vertx != null) {
-      vertx.close();
-      vertx = null;
-    }
   }
 }

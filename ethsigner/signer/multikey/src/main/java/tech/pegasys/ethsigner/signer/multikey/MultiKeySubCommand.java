@@ -97,8 +97,7 @@ public class MultiKeySubCommand extends SignerSubCommand {
     final HSMTransactionSignerFactory hsmFactory =
         new HSMTransactionSignerFactory(
             new HSMKeyStoreProvider(
-                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin),
-            Vertx.vertx());
+                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
 
     return new MultiKeyTransactionSignerProvider(
         signingMetadataTomlConfigLoader, azureFactory, hashicorpSignerFactory, hsmFactory);

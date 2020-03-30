@@ -21,7 +21,6 @@ import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import java.nio.file.Path;
 
 import com.google.common.base.MoreObjects;
-import io.vertx.core.Vertx;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -74,13 +73,8 @@ public class HSMSubCommand extends SignerSubCommand {
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
     final HSMKeyStoreProvider provider =
         new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
-    final HSMTransactionSignerFactory factory =
-        new HSMTransactionSignerFactory(provider, Vertx.vertx());
-    try {
-      return factory.createSigner(ethAddress);
-    } finally {
-      factory.shutdown();
-    }
+    final HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(provider);
+    return factory.createSigner(ethAddress);
   }
 
   @Override

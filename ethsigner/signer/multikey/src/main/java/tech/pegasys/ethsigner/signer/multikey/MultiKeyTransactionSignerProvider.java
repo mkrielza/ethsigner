@@ -166,6 +166,5 @@ public class MultiKeyTransactionSignerProvider
   @Override
   public void shutdown() {
     hashicorpSignerFactory.shutdown(); // required to clean up its Vertx instance.
-    hsmFactory.shutdown();
   }
 }
