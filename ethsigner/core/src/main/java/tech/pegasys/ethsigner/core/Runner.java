@@ -151,7 +151,6 @@ public class Runner {
             responseFactory,
             new EthAccountsBodyProvider(transactionSignerProvider::availableAddresses),
             jsonDecoder));
-
     return requestMapper;
   }
 

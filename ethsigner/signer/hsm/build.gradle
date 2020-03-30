@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 ConsenSys AG.
+ * Copyright 2018 ConsenSys AG.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -12,7 +12,7 @@
  */
 
 jar {
-  archiveBaseName = 'ethsigner-signer-multikey'
+  archiveBaseName = 'ethsigner-signer-hsm'
   manifest {
     attributes(
       'Specification-Title': archiveBaseName,
@@ -23,38 +23,30 @@ jar {
   }
 }
 
+
 dependencies {
 
   implementation project(':ethsigner:commandline')
   implementation project(':ethsigner:signing-api')
-  implementation project(':ethsigner:signer:file-based')
-  implementation project(':ethsigner:signer:azure')
-  implementation project(':ethsigner:signer:hsm')
-  implementation project(':ethsigner:signer:hashicorp')
-  implementation 'tech.pegasys.signers.internal:hashicorp'
-
-  implementation 'io.vertx:vertx-core'
-
 
   implementation 'info.picocli:picocli'
   implementation 'com.google.guava:guava'
-  implementation 'org.web3j:core'
-  implementation 'org.apache.tuweni:tuweni-toml'
   implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.web3j:core'
+  implementation 'org.bouncycastle:bcprov-jdk15on'
+  implementation 'org.bouncycastle:bcpkix-jdk15on'
+  implementation 'io.vertx:vertx-core'
 
   runtimeOnly 'org.apache.logging.log4j:log4j-core'
   runtimeOnly 'org.apache.logging.log4j:log4j-slf4j-impl'
 
   testImplementation 'org.junit.jupiter:junit-jupiter-api'
   testImplementation 'org.assertj:assertj-core'
-  testImplementation 'org.mockito:mockito-inline'
   testImplementation 'org.mockito:mockito-core'
-  testImplementation 'org.mockito:mockito-junit-jupiter'
-  testImplementation(group: 'tech.pegasys.signers.internal', name: 'hashicorp', classifier: 'test-fixtures')
 
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
-}
 
-artifacts {
-  testSupportArtifacts testSupportJar
+  integrationTestImplementation 'io.rest-assured:rest-assured'
+  integrationTestImplementation 'org.assertj:assertj-core'
+  integrationTestImplementation 'org.mock-server:mockserver-netty'
 }

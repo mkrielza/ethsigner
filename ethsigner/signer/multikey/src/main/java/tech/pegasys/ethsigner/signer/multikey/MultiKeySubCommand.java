@@ -20,6 +20,8 @@ import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
 import tech.pegasys.ethsigner.signer.hashicorp.HashicorpSignerFactory;
+import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
+import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
 import java.nio.file.Path;
 
@@ -60,6 +62,27 @@ public class MultiKeySubCommand extends SignerSubCommand {
       arity = "1")
   private Path directoryPath;
 
+  @Option(
+      names = {"-l", "--library"},
+      description = "The HSM PKCS11 library used to sign transactions.",
+      paramLabel = "<LIBRARY_PATH>",
+      required = false)
+  private Path libraryPath;
+
+  @Option(
+      names = {"-s", "--slot-index"},
+      description = "The HSM slot used to sign transactions.",
+      paramLabel = "<SLOT_INDEX>",
+      required = false)
+  private String slotIndex;
+
+  @Option(
+      names = {"-p", "--slot-pin"},
+      description = "The crypto user pin of the HSM slot used to sign transactions.",
+      paramLabel = "<SLOT_PIN>",
+      required = false)
+  private String slotPin;
+
   @Override
   public TransactionSignerProvider createSignerFactory()
       throws TransactionSignerInitializationException {
@@ -71,8 +94,13 @@ public class MultiKeySubCommand extends SignerSubCommand {
 
     final HashicorpSignerFactory hashicorpSignerFactory = new HashicorpSignerFactory(Vertx.vertx());
 
+    final HSMTransactionSignerFactory hsmFactory =
+        new HSMTransactionSignerFactory(
+            new HSMKeyStoreProvider(
+                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
+
     return new MultiKeyTransactionSignerProvider(
-        signingMetadataTomlConfigLoader, azureFactory, hashicorpSignerFactory);
+        signingMetadataTomlConfigLoader, azureFactory, hashicorpSignerFactory, hsmFactory);
   }
 
   @Override

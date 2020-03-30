@@ -133,6 +133,7 @@ public class IntegrationTestBase {
         new Runner(
             chainId,
             transactionSignerProvider,
+            null,
             httpClientOptions,
             httpServerOptions,
             downstreamTimeout,

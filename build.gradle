@@ -118,7 +118,9 @@ allprojects {
     maven { url  "https://consensys.bintray.com/pegasys-repo" }
   }
 
-  dependencies { errorprone("com.google.errorprone:error_prone_core") }
+  dependencies {
+    errorprone("com.google.errorprone:error_prone_core")
+  }
 
   apply plugin: 'com.diffplug.gradle.spotless'
   spotless {
