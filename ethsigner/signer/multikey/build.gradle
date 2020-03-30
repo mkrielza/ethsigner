@@ -31,6 +31,9 @@ dependencies {
   implementation project(':ethsigner:signer:azure')
   implementation project(':ethsigner:signer:hsm')
   implementation project(':ethsigner:signer:hashicorp')
+  implementation 'tech.pegasys.signers.internal:hashicorp'
+
+  implementation 'io.vertx:vertx-core'
 
 
   implementation 'info.picocli:picocli'
@@ -47,6 +50,7 @@ dependencies {
   testImplementation 'org.mockito:mockito-inline'
   testImplementation 'org.mockito:mockito-core'
   testImplementation 'org.mockito:mockito-junit-jupiter'
+  testImplementation(group: 'tech.pegasys.signers.internal', name: 'hashicorp', classifier: 'test-fixtures')
 
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 }

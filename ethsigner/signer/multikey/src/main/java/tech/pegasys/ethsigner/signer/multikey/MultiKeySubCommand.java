@@ -19,6 +19,7 @@ import tech.pegasys.ethsigner.TransactionSignerInitializationException;
 import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
+import tech.pegasys.ethsigner.signer.hashicorp.HashicorpSignerFactory;
 import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
 import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
@@ -26,6 +27,7 @@ import java.nio.file.Path;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
+import io.vertx.core.Vertx;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -45,10 +47,6 @@ import picocli.CommandLine.Spec;
 public class MultiKeySubCommand extends SignerSubCommand {
 
   public static final String COMMAND_NAME = "multikey-signer";
-
-  public static final String IDENTIFIER_FILE_BASED = "file-based";
-  public static final String IDENTIFIER_AZURE = "azure";
-  public static final String IDENTIFIER_HSM = "hsm";
 
   public MultiKeySubCommand() {}
 
@@ -90,14 +88,20 @@ public class MultiKeySubCommand extends SignerSubCommand {
       throws TransactionSignerInitializationException {
     final SigningMetadataTomlConfigLoader signingMetadataTomlConfigLoader =
         new SigningMetadataTomlConfigLoader(directoryPath);
+
     final AzureKeyVaultTransactionSignerFactory azureFactory =
         new AzureKeyVaultTransactionSignerFactory(new AzureKeyVaultAuthenticator());
+
+    final HashicorpSignerFactory hashicorpSignerFactory = new HashicorpSignerFactory(Vertx.vertx());
+
     final HSMTransactionSignerFactory hsmFactory =
         new HSMTransactionSignerFactory(
             new HSMKeyStoreProvider(
-                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
+                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin),
+            Vertx.vertx());
+
     return new MultiKeyTransactionSignerProvider(
-        signingMetadataTomlConfigLoader, azureFactory, hsmFactory);
+        signingMetadataTomlConfigLoader, azureFactory, hashicorpSignerFactory, hsmFactory);
   }
 
   @Override
