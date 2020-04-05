@@ -18,9 +18,11 @@ import iaik.pkcs.pkcs11.Slot;
 import iaik.pkcs.pkcs11.Module;
 
 import iaik.pkcs.pkcs11.TokenException;
+import iaik.pkcs.pkcs11.UnsupportedAttributeException;
 import iaik.pkcs.pkcs11.objects.ECPrivateKey;
 import iaik.pkcs.pkcs11.objects.ECPublicKey;
 import iaik.pkcs.pkcs11.objects.Key;
+import iaik.pkcs.pkcs11.objects.KeyPair;
 import iaik.pkcs.pkcs11.objects.PKCS11Object;
 import iaik.pkcs.pkcs11.objects.PrivateKey;
 import iaik.pkcs.pkcs11.objects.PublicKey;
@@ -31,11 +33,17 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.params.ECDomainParameters;
+import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
+import org.bouncycastle.math.ec.ECPoint;
 import org.web3j.crypto.ECDSASignature;
+import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
 import tech.pegasys.ethsigner.core.signing.Signature;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.security.spec.ECGenParameterSpec;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -119,6 +127,80 @@ public class HSMCryptoProvider {
     return null;
   }
 
+  public void closeSession(Session session) {
+    try {
+      session.closeSession();
+    } catch (Exception ex) {
+      LOG.error(ex);
+    }
+  }
+/*
+
+    }()
+    // get a timestamp to set as CKA_ID so keys can be sorted chronologically
+    t := time.Now().Unix()
+    ts := make([]byte, 8)
+    binary.BigEndian.PutUint64(ts, uint64(t))
+*/
+
+  private byte[] timeToBytes() {
+    long l = Instant.now().getEpochSecond();
+    byte[] result = new byte[8];
+    for (int i = 7; i >= 0; i--) {
+      result[i] = (byte)(l & 0xFF);
+      l >>= 8;
+    }
+    return result;
+  }
+
+//  public static long bytesToLong(final byte[] bytes, final int offset) {
+//    long result = 0;
+//    for (int i = offset; i < Long.BYTES + offset; i++) {
+//      result <<= Long.BYTES;
+//      result |= (bytes[i] & 0xFF);
+//    }
+//    return result;
+//  }
+
+  public String generateECKeyPair(long slotIndex) {
+    String address = null;
+    Session session = openSession(slotIndex);
+    byte[] id = timeToBytes();
+    //byte[] ecParam  = new byte[]{0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x0A}; // secp256k1
+    byte[] ecParams = null;
+    try {
+      ecParams = params.getEncoded();
+    } catch (IOException ex) {
+      LOG.error(ex);
+    }
+    ECPrivateKey privateKeyTemplate = new ECPrivateKey();
+    privateKeyTemplate.getToken().setBooleanValue(true);
+    privateKeyTemplate.getSign().setBooleanValue(true);
+    privateKeyTemplate.getPrivate().setBooleanValue(true);
+    privateKeyTemplate.getLabel().setCharArrayValue("EC-private-key".toCharArray());
+    privateKeyTemplate.getId().setByteArrayValue(id);
+    ECPublicKey publicKeyTemplate = new ECPublicKey();
+    publicKeyTemplate.getToken().setBooleanValue(true);
+    publicKeyTemplate.getVerify().setBooleanValue(true);
+    publicKeyTemplate.getEcdsaParams().setByteArrayValue(ecParams);
+    publicKeyTemplate.getPrivate().setBooleanValue(true);
+    publicKeyTemplate.getLabel().setCharArrayValue("EC-public-key".toCharArray());
+    publicKeyTemplate.getId().setByteArrayValue(id);
+    KeyPair keyPair = null;
+    try {
+      keyPair = session.generateKeyPair(Mechanism.get(PKCS11Constants.CKM_EC_KEY_PAIR_GEN), publicKeyTemplate, privateKeyTemplate);
+      address = getAddress((ECPublicKey)keyPair.getPublicKey());
+      setLabel(session, keyPair.getPrivateKey(), address);
+      setLabel(session, keyPair.getPublicKey(), address);
+    } catch (TokenException ex) {
+      LOG.error(ex);
+      throw new RuntimeException("Failed to generate a keypair.");
+    } finally {
+      closeSession(session);
+    }
+    return address;
+  }
+
   public Signature sign(long slotIndex, byte[] hash, String address) {
     Session session = openSession(slotIndex);
 
@@ -137,11 +219,7 @@ public class HSMCryptoProvider {
       throw new RuntimeException("Failed to produce a valid signature for the hash.");
     }
     finally {
-      try {
-        session.closeSession();
-      } catch (Exception ex) {
-        LOG.error(ex);
-      }
+      closeSession(session);
     }
     ECDSASignature canonicalSignature = null;
     try {
@@ -179,8 +257,7 @@ public class HSMCryptoProvider {
 
   // getDecodedECPoint decodes the CKA_EC_POINT and removes the DER encoding.
   private byte[] getDecodedECPoint(ECPublicKey publicKey)  {
-
-    try {
+  try {
       byte[] encodedPoint = DEROctetString.getInstance(getECPoint(publicKey)).getOctets();
       return curve.getCurve().decodePoint(encodedPoint).getEncoded(false);
     } catch (Exception ex) {
@@ -190,8 +267,32 @@ public class HSMCryptoProvider {
   }
 
   private byte[] getPublicKey(ECPublicKey publicKey) {
-    byte[] ecPoint = getDecodedECPoint(publicKey);
-    return ecPoint;
+    return getDecodedECPoint(publicKey);
+  }
+
+  private String getAddress(ECPublicKey publicKey) {
+    byte[] publicKeyBytes = getPublicKey(publicKey);
+    return Keys.toChecksumAddress(Keys.getAddress(Sign.publicFromPoint(publicKeyBytes)));
+  }
+
+  public String getLabel(Session session, Key objectHandle) {
+    try {
+      Key obj = (Key) session.getAttributeValues(objectHandle);
+      return obj.getLabel().toString();
+    } catch (TokenException ex) {
+      LOG.error(ex);
+    }
+    return null;
+  }
+
+  private void setLabel(Session session, Key objectHandle, String label) {
+    try {
+      Key obj = new Key();
+      obj.getLabel().setCharArrayValue(label.toCharArray());
+      session.setAttributeValues(objectHandle, obj);
+    } catch (TokenException ex) {
+      LOG.error(ex);
+    }
   }
 
   private int recoverKeyIndex(final ECDSASignature sig, final byte[] hash, BigInteger publicKey) {

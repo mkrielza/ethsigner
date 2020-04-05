@@ -52,6 +52,7 @@ public class HSMCryptoProviderTest {
       ksp.login(slot, pin);
       ksp.getAll(slot);
       ksp.sign(slot, hash, address);
+      ksp.generateECKeyPair(slot);
     } catch (Exception ex) {
       LOG.error(ex);
     } finally {
