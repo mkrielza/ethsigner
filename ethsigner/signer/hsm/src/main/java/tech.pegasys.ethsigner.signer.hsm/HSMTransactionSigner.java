@@ -118,6 +118,7 @@ public class HSMTransactionSigner implements TransactionSigner {
       ByteArrayInputStream inStream = new ByteArrayInputStream(signature);
       ASN1InputStream asnInputStream = new ASN1InputStream(inStream);
       asn1Signature = asnInputStream.readObject();
+      asnInputStream.close();
     } catch (Exception ex) {
       LOG.trace(ex);
       throw new RuntimeException(
