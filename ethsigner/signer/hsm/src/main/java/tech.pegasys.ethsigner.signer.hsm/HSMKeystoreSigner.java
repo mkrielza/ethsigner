@@ -137,7 +137,6 @@ public class HSMKeystoreSigner implements TransactionSigner {
         }
       }
     }
-
     // The signature MAY be in the "top" of the curve, which is illegal in Ethereum thus it must be
     // transposed to the lower intersection.
     final ECDSASignature initialSignature = new ECDSASignature(R, S);

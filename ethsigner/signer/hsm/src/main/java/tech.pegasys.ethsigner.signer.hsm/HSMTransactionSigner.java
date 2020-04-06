@@ -15,6 +15,8 @@ package tech.pegasys.ethsigner.signer.hsm;
 import tech.pegasys.ethsigner.core.signing.Signature;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
+import org.web3j.crypto.Hash;
+
 public class HSMTransactionSigner implements TransactionSigner {
 
   // private static final Logger LOG = LogManager.getLogger();
@@ -29,7 +31,8 @@ public class HSMTransactionSigner implements TransactionSigner {
 
   @Override
   public Signature sign(final byte[] data) {
-    return wallet.sign(data, address);
+    final byte[] hash = Hash.sha3(data);
+    return wallet.sign(hash, address);
   }
 
   @Override

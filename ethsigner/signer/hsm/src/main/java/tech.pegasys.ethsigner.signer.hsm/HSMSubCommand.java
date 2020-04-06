@@ -36,7 +36,12 @@ public class HSMSubCommand extends SignerSubCommand {
   // private static final String READ_PIN_FILE_ERROR = "Error when reading the pin from file.";
   public static final String COMMAND_NAME = "hsm-signer";
 
-  public HSMSubCommand() {}
+  private HSMTransactionSignerFactory factory;
+
+  public HSMSubCommand() {
+    // Runtime.getRuntime().addShutdownHook(new Thread(this::shutdown));
+
+  }
 
   @SuppressWarnings("unused") // Picocli injects reference to command spec
   @Spec
@@ -71,18 +76,20 @@ public class HSMSubCommand extends SignerSubCommand {
   private String ethAddress;
 
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
-    //    final HSMKeyStoreProvider provider =
-    //        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
-    //    final HSMKeystoreSignerFactory factory = new HSMKeystoreSignerFactory(provider);
-    //    return factory.createSigner(ethAddress);
-    final HSMTransactionSignerFactory factory =
-        new HSMTransactionSignerFactory(libraryPath.toString(), slotIndex, slotPin);
-    try {
-      return factory.createSigner(ethAddress);
-    } finally {
-      factory.shutdown();
-    }
+    //        final HSMKeyStoreProvider provider =
+    //            new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
+    //        final HSMKeystoreSignerFactory factory = new HSMKeystoreSignerFactory(provider);
+    //        return factory.createSigner(ethAddress);
+
+    if (factory == null)
+      factory = new HSMTransactionSignerFactory(libraryPath.toString(), slotIndex, slotPin);
+    return factory.createSigner(ethAddress);
   }
+
+  //  private void shutdown() {
+  //    if (factory != null)
+  //      factory.shutdown();
+  //  }
 
   @Override
   public TransactionSignerProvider createSignerFactory()
