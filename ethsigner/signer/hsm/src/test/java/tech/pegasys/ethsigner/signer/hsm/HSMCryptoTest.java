@@ -14,49 +14,66 @@ package tech.pegasys.ethsigner.signer.hsm;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.bouncycastle.util.encoders.Hex;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.web3j.crypto.Hash;
-import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-
-public class HSMCryptoProviderTest {
+public class HSMCryptoTest {
 
   private static final Logger LOG = LogManager.getLogger();
 
-  private static HSMCryptoProvider ksp;
+  private static HSMCrypto c;
   private static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
   private static long slot = 2059091075;
   private static String pin = "us3rs3cur3";
-  private static String address = "0x47374Ed3355101C178777F945DBB409a60863e8E";
+  // private static String address = "0x47374Ed3355101C178777F945DBB409a60863e8E";
 
   @BeforeAll
-  public static void createProvider() {
-    ksp = new HSMCryptoProvider(library);
+  public static void beforeAll() {
+    c = new HSMCrypto(library);
+    c.initialize();
+  }
+
+  @AfterAll
+  public static void afterAll() {
+    c.shutdown();
   }
 
   @Test
-  public void success() {
+  public void generate() {
+    try {
+      c.login(slot, pin);
+      c.generateECKeyPair(slot);
+      c.logout(slot);
+    } catch (Exception ex) {
+      LOG.error(ex);
+    }
+  }
+
+  @Test
+  public void list() {
+    try {
+      c.login(slot, pin);
+      c.getAddresses(slot);
+      c.logout(slot);
+    } catch (Exception ex) {
+      LOG.error(ex);
+    }
+  }
+
+  @Test
+  public void sign() {
     final byte[] data = {1, 2, 3};
     final byte[] hash = Hash.sha3(data);
     try {
-      ksp.initialize();
-      ksp.login(slot, pin);
-      ksp.getAll(slot);
-      ksp.sign(slot, hash, address);
-      ksp.generateECKeyPair(slot);
+      c.login(slot, pin);
+      c.getAddresses(slot);
+      String address = c.generateECKeyPair(slot);
+      c.sign(slot, hash, address);
+      c.logout(slot);
     } catch (Exception ex) {
       LOG.error(ex);
-    } finally {
-      ksp.shutdown();
     }
   }
 }

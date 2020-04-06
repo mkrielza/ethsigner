@@ -20,7 +20,6 @@ import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
 import tech.pegasys.ethsigner.signer.hashicorp.HashicorpSignerFactory;
-import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
 import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
 import java.nio.file.Path;
@@ -94,11 +93,12 @@ public class MultiKeySubCommand extends SignerSubCommand {
 
     final HashicorpSignerFactory hashicorpSignerFactory = new HashicorpSignerFactory(Vertx.vertx());
 
+    //    final HSMKeystoreSignerFactory hsmFactory =
+    //        new HSMKeystoreSignerFactory(
+    //            new HSMKeyStoreProvider(
+    //                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
     final HSMTransactionSignerFactory hsmFactory =
-        new HSMTransactionSignerFactory(
-            new HSMKeyStoreProvider(
-                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
-
+        new HSMTransactionSignerFactory(libraryPath.toString(), slotIndex, slotPin);
     return new MultiKeyTransactionSignerProvider(
         signingMetadataTomlConfigLoader, azureFactory, hashicorpSignerFactory, hsmFactory);
   }

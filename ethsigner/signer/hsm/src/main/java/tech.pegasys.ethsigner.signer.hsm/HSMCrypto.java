@@ -12,13 +12,24 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import iaik.pkcs.pkcs11.Mechanism;
-import iaik.pkcs.pkcs11.Session;
-import iaik.pkcs.pkcs11.Slot;
-import iaik.pkcs.pkcs11.Module;
+import tech.pegasys.ethsigner.core.signing.Signature;
 
+import java.io.IOException;
+import java.math.BigInteger;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import iaik.pkcs.pkcs11.Mechanism;
+import iaik.pkcs.pkcs11.Module;
+import iaik.pkcs.pkcs11.Session;
+import iaik.pkcs.pkcs11.SessionInfo;
+import iaik.pkcs.pkcs11.Slot;
+import iaik.pkcs.pkcs11.State;
 import iaik.pkcs.pkcs11.TokenException;
-import iaik.pkcs.pkcs11.UnsupportedAttributeException;
 import iaik.pkcs.pkcs11.objects.ECPrivateKey;
 import iaik.pkcs.pkcs11.objects.ECPublicKey;
 import iaik.pkcs.pkcs11.objects.Key;
@@ -33,25 +44,11 @@ import org.bouncycastle.asn1.DEROctetString;
 import org.bouncycastle.asn1.sec.SECNamedCurves;
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.params.ECDomainParameters;
-import org.bouncycastle.crypto.params.ECKeyGenerationParameters;
-import org.bouncycastle.math.ec.ECPoint;
 import org.web3j.crypto.ECDSASignature;
 import org.web3j.crypto.Keys;
 import org.web3j.crypto.Sign;
-import tech.pegasys.ethsigner.core.signing.Signature;
 
-import java.io.IOException;
-import java.math.BigInteger;
-import java.security.spec.ECGenParameterSpec;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-
-public class HSMCryptoProvider {
+public class HSMCrypto {
 
   private static final Logger LOG = LogManager.getLogger();
   private static final String CURVE = "secp256k1";
@@ -64,12 +61,13 @@ public class HSMCryptoProvider {
   private final X9ECParameters params;
   private final ECDomainParameters curve;
 
-  public HSMCryptoProvider(final String library) {
+  public HSMCrypto(final String library) {
     this.library = library;
     this.slots = new HashMap<>();
     this.sessions = new HashMap<>();
     this.params = SECNamedCurves.getByName(CURVE);
-    this.curve = new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
+    this.curve =
+        new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
   }
 
   public void initialize() {
@@ -88,9 +86,9 @@ public class HSMCryptoProvider {
   }
 
   public void shutdown() {
-    try
-    {
+    try {
       for (long slotIndex : slots.keySet()) {
+        if (sessions.get(slotIndex) != null) // && isLoggedIn(slotIndex))
         logout(slotIndex);
       }
       module.finalize(null);
@@ -99,23 +97,31 @@ public class HSMCryptoProvider {
     }
   }
 
-  public void login(long slotIndex, String slotPin) {
+  public boolean login(long slotIndex, String slotPin) {
     try {
       Session session = slots.get(slotIndex).getToken().openSession(true, true, null, null);
       session.login(Session.UserType.USER, slotPin.toCharArray());
       sessions.put(slotIndex, session);
     } catch (Exception ex) {
       LOG.error(ex);
+      return false;
     }
+    return true;
   }
 
-  public void logout(long slotIndex) {
+  public boolean logout(long slotIndex) {
     try {
-      sessions.get(slotIndex).logout();
-      sessions.get(slotIndex).closeSession();
-    } catch (Exception ex) {
+      Session session = sessions.get(slotIndex);
+      if (session != null) {
+        session.logout();
+        session.closeSession();
+        sessions.put(slotIndex, null);
+      }
+    } catch (TokenException ex) {
       LOG.error(ex);
+      return false;
     }
+    return true;
   }
 
   public Session openSession(long slotIndex) {
@@ -134,44 +140,35 @@ public class HSMCryptoProvider {
       LOG.error(ex);
     }
   }
-/*
 
-    }()
-    // get a timestamp to set as CKA_ID so keys can be sorted chronologically
-    t := time.Now().Unix()
-    ts := make([]byte, 8)
-    binary.BigEndian.PutUint64(ts, uint64(t))
-*/
-
-  private byte[] timeToBytes() {
-    long l = Instant.now().getEpochSecond();
-    byte[] result = new byte[8];
-    for (int i = 7; i >= 0; i--) {
-      result[i] = (byte)(l & 0xFF);
-      l >>= 8;
-    }
+  public boolean isLoggedIn(long slotIndex) {
+    boolean result = false;
+    Session session = openSession(slotIndex);
+    if (session != null)
+      try {
+        SessionInfo si = session.getSessionInfo();
+        result = si.getState().equals(State.RW_USER_FUNCTIONS);
+      } catch (Exception ex) {
+        LOG.error(ex);
+      } finally {
+        closeSession(session);
+      }
     return result;
   }
-
-//  public static long bytesToLong(final byte[] bytes, final int offset) {
-//    long result = 0;
-//    for (int i = offset; i < Long.BYTES + offset; i++) {
-//      result <<= Long.BYTES;
-//      result |= (bytes[i] & 0xFF);
-//    }
-//    return result;
-//  }
 
   public String generateECKeyPair(long slotIndex) {
     String address = null;
     Session session = openSession(slotIndex);
     byte[] id = timeToBytes();
-    //byte[] ecParam  = new byte[]{0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x0A}; // secp256k1
+    // byte[] ecParam  = new byte[]{0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x0A}; // secp256k1
+    // ASN1ObjectIdentifier asn1 = SECNamedCurves.getOID(CURVE);
+    // byte[] ecParams = asn1.getId().getBytes(Charset.defaultCharset());
     byte[] ecParams = null;
     try {
       ecParams = params.getEncoded();
     } catch (IOException ex) {
       LOG.error(ex);
+      throw new RuntimeException("Failed to extract EC parameters.");
     }
     ECPrivateKey privateKeyTemplate = new ECPrivateKey();
     privateKeyTemplate.getToken().setBooleanValue(true);
@@ -188,8 +185,12 @@ public class HSMCryptoProvider {
     publicKeyTemplate.getId().setByteArrayValue(id);
     KeyPair keyPair = null;
     try {
-      keyPair = session.generateKeyPair(Mechanism.get(PKCS11Constants.CKM_EC_KEY_PAIR_GEN), publicKeyTemplate, privateKeyTemplate);
-      address = getAddress((ECPublicKey)keyPair.getPublicKey());
+      keyPair =
+          session.generateKeyPair(
+              Mechanism.get(PKCS11Constants.CKM_EC_KEY_PAIR_GEN),
+              publicKeyTemplate,
+              privateKeyTemplate);
+      address = getAddress((ECPublicKey) keyPair.getPublicKey());
       setLabel(session, keyPair.getPrivateKey(), address);
       setLabel(session, keyPair.getPublicKey(), address);
     } catch (TokenException ex) {
@@ -201,7 +202,27 @@ public class HSMCryptoProvider {
     return address;
   }
 
-  public Signature sign(long slotIndex, byte[] hash, String address) {
+  public boolean deleteECKeyPair(long slotIndex, String address) {
+    boolean result = true;
+    Session session = openSession(slotIndex);
+    if (session != null)
+      try {
+        Key key = new Key();
+        key.getLabel().setCharArrayValue(address.toCharArray());
+        List<PKCS11Object> keys = findObjects(session, key);
+        for (PKCS11Object k : keys) {
+          session.destroyObject(k);
+        }
+      } catch (Exception ex) {
+        LOG.error(ex);
+        result = false;
+      } finally {
+        closeSession(session);
+      }
+    return result;
+  }
+
+  public Signature sign(long slotIndex, byte[] hash, String address) throws RuntimeException {
     Session session = openSession(slotIndex);
 
     ECPrivateKey privateKeyHandle = getPrivateKeyHandle(session, address);
@@ -217,8 +238,7 @@ public class HSMCryptoProvider {
     } catch (Exception ex) {
       LOG.error(ex);
       throw new RuntimeException("Failed to produce a valid signature for the hash.");
-    }
-    finally {
+    } finally {
       closeSession(session);
     }
     ECDSASignature canonicalSignature = null;
@@ -229,25 +249,36 @@ public class HSMCryptoProvider {
       throw new RuntimeException("Failed to transpose signature.");
     }
 
-    // Now we have to work backwards to figure out the recId needed to recover the signature.
     final int recId = recoverKeyIndex(canonicalSignature, hash, publicKey);
     if (recId == -1) {
-      throw new RuntimeException("Failed to construct a recoverable key. Are your credentials valid?");
+      throw new RuntimeException(
+          "Failed to construct a recoverable key. Are your credentials valid?");
     }
 
     final int headerByte = recId + 27;
-    return new Signature(BigInteger.valueOf(headerByte), canonicalSignature.r, canonicalSignature.s);
+    return new Signature(
+        BigInteger.valueOf(headerByte), canonicalSignature.r, canonicalSignature.s);
   }
 
   // transposeSignatureToLowS ensures that the signature has a low S value as Ethereum requires.
-  private ECDSASignature transposeSignatureToLowS(byte[] signature) throws Exception {
-    byte[] r = Arrays.copyOfRange(signature, 0, signature.length/2);
+  private ECDSASignature transposeSignatureToLowS(byte[] signature) {
+    byte[] r = Arrays.copyOfRange(signature, 0, signature.length / 2);
     BigInteger R = new BigInteger(1, r);
-    byte[] s = Arrays.copyOfRange(signature, signature.length/2, signature.length);
+    byte[] s = Arrays.copyOfRange(signature, signature.length / 2, signature.length);
     BigInteger S = new BigInteger(1, s);
     final ECDSASignature initialSignature = new ECDSASignature(R, S);
     final ECDSASignature canonicalSignature = initialSignature.toCanonicalised();
     return canonicalSignature;
+  }
+
+  private byte[] timeToBytes() {
+    long l = Instant.now().getEpochSecond();
+    byte[] result = new byte[8];
+    for (int i = 7; i >= 0; i--) {
+      result[i] = (byte) (l & 0xFF);
+      l >>= 8;
+    }
+    return result;
   }
 
   // getECPoint returns the CKA_EC_POINT of the given public key.
@@ -256,8 +287,8 @@ public class HSMCryptoProvider {
   }
 
   // getDecodedECPoint decodes the CKA_EC_POINT and removes the DER encoding.
-  private byte[] getDecodedECPoint(ECPublicKey publicKey)  {
-  try {
+  private byte[] getDecodedECPoint(ECPublicKey publicKey) {
+    try {
       byte[] encodedPoint = DEROctetString.getInstance(getECPoint(publicKey)).getOctets();
       return curve.getCurve().decodePoint(encodedPoint).getEncoded(false);
     } catch (Exception ex) {
@@ -266,6 +297,7 @@ public class HSMCryptoProvider {
     return null;
   }
 
+  // getPublicKey returns the raw decoded public key.
   private byte[] getPublicKey(ECPublicKey publicKey) {
     return getDecodedECPoint(publicKey);
   }
@@ -273,6 +305,10 @@ public class HSMCryptoProvider {
   private String getAddress(ECPublicKey publicKey) {
     byte[] publicKeyBytes = getPublicKey(publicKey);
     return Keys.toChecksumAddress(Keys.getAddress(Sign.publicFromPoint(publicKeyBytes)));
+  }
+
+  private boolean isAddress(String address) {
+    return address.matches("^(0x){1}[0-9a-fA-F]{40}$");
   }
 
   public String getLabel(Session session, Key objectHandle) {
@@ -295,6 +331,7 @@ public class HSMCryptoProvider {
     }
   }
 
+  // recoverKeyIndex works backwards to figure out the recId needed to recover the signature.
   private int recoverKeyIndex(final ECDSASignature sig, final byte[] hash, BigInteger publicKey) {
     for (int i = 0; i < 4; i++) {
       final BigInteger k = Sign.recoverFromSignature(i, sig, hash);
@@ -305,7 +342,7 @@ public class HSMCryptoProvider {
     return -1;
   }
 
-  private PKCS11Object findObject(Session session, Key key) {
+  private PKCS11Object findObject(Session session, PKCS11Object key) {
     PKCS11Object[] objects;
     try {
       session.findObjectsInit(key);
@@ -314,9 +351,24 @@ public class HSMCryptoProvider {
       if (objects.length > 0) {
         return objects[0];
       }
+    } catch (TokenException ex) {
+      LOG.error(ex);
     }
-    catch (TokenException ex) { LOG.error(ex); }
     return null;
+  }
+
+  private List<PKCS11Object> findObjects(Session session, PKCS11Object key) {
+    List<PKCS11Object> result = new ArrayList<>();
+    PKCS11Object[] objects;
+    try {
+      session.findObjectsInit(key);
+      objects = session.findObjects(1000);
+      session.findObjectsFinal();
+      result.addAll(Arrays.asList(objects));
+    } catch (TokenException ex) {
+      LOG.error(ex);
+    }
+    return result;
   }
 
   private ECPrivateKey getPrivateKeyHandle(Session session, String address) {
@@ -331,29 +383,41 @@ public class HSMCryptoProvider {
     return (ECPublicKey) findObject(session, key);
   }
 
-  public List<PrivateKey> getAll(long slotIndex) {
+  public List<String> getAddresses(long slotIndex) {
     Session session = openSession(slotIndex);
-    PrivateKey key = new PrivateKey();
-    List<PrivateKey> result = new ArrayList<>();
+    List<String> result = new ArrayList<>();
     try {
+      PrivateKey key = new PrivateKey();
       session.findObjectsInit(key);
       PKCS11Object[] objects = session.findObjects(100);
       session.findObjectsFinal();
 
       for (PKCS11Object object : objects) {
-        LOG.info(object.getAttribute(PKCS11Constants.CKA_LABEL));
-        result.add((PrivateKey)object);
+        String address = object.getAttribute(PKCS11Constants.CKA_LABEL).toString();
+        if (isAddress(address)) {
+          LOG.info(address);
+          result.add(address);
+        }
       }
     } catch (Exception ex) {
       LOG.error(ex);
     } finally {
-      try {
-        session.closeSession();
-      }
-      catch (TokenException ex)
-      {
-        LOG.error(ex);
-      }
+      closeSession(session);
+    }
+    return result;
+  }
+
+  public boolean containsAddress(long slotIndex, String address) {
+    Session session = openSession(slotIndex);
+    boolean result = false;
+    try {
+      PublicKey key = new PublicKey();
+      key.getLabel().setCharArrayValue(address.toCharArray());
+      result = findObject(session, key) != null;
+    } catch (Exception ex) {
+      LOG.error(ex);
+    } finally {
+      closeSession(session);
     }
     return result;
   }

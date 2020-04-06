@@ -71,10 +71,17 @@ public class HSMSubCommand extends SignerSubCommand {
   private String ethAddress;
 
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
-    final HSMKeyStoreProvider provider =
-        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
-    final HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(provider);
-    return factory.createSigner(ethAddress);
+    //    final HSMKeyStoreProvider provider =
+    //        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
+    //    final HSMKeystoreSignerFactory factory = new HSMKeystoreSignerFactory(provider);
+    //    return factory.createSigner(ethAddress);
+    final HSMTransactionSignerFactory factory =
+        new HSMTransactionSignerFactory(libraryPath.toString(), slotIndex, slotPin);
+    try {
+      return factory.createSigner(ethAddress);
+    } finally {
+      factory.shutdown();
+    }
   }
 
   @Override

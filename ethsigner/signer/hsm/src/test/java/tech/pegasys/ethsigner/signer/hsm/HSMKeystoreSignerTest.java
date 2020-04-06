@@ -20,7 +20,7 @@ import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class HSMTransactionSignerTest {
+public class HSMKeystoreSignerTest {
 
   private static HSMKeyStoreProvider ksp;
 
@@ -31,7 +31,7 @@ public class HSMTransactionSignerTest {
 
   @Test
   public void success() {
-    final TransactionSigner signer = (new HSMTransactionSignerFactory(ksp)).createSigner("0x");
+    final TransactionSigner signer = (new HSMKeystoreSignerFactory(ksp)).createSigner("0x");
 
     assertThat(signer).isNotNull();
     assertThat(signer.getAddress()).isNotEmpty();

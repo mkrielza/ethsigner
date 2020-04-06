@@ -12,28 +12,21 @@
  */
 package tech.pegasys.ethsigner.signer.hsm;
 
-import tech.pegasys.ethsigner.core.signing.Signature;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
-public class HSMTransactionSigner implements TransactionSigner {
+public class HSMKeystoreSignerFactory {
 
-  // private static final Logger LOG = LogManager.getLogger();
+  private final HSMKeyStoreProvider provider;
 
-  private final HSMWallet wallet;
-  private final String address;
-
-  public HSMTransactionSigner(final HSMWallet wallet, String address) {
-    this.wallet = wallet;
-    this.address = address;
+  public HSMKeystoreSignerFactory(final HSMKeyStoreProvider provider) {
+    this.provider = provider;
   }
 
-  @Override
-  public Signature sign(final byte[] data) {
-    return wallet.sign(data, address);
+  public TransactionSigner createSigner(String address) {
+    return new HSMKeystoreSigner(provider, address);
   }
 
-  @Override
-  public String getAddress() {
-    return address;
+  public String getSlotIndex() {
+    return provider.getSlotIndex();
   }
 }
