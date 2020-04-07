@@ -27,12 +27,10 @@ import org.web3j.crypto.Hash;
 
 public class HSMCryptoTest {
 
-  //  private static final Logger LOG = LogManager.getLogger();
-
   private static HSMCrypto c;
   private static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
-  private static String label = "WALLET-001";
-  private static long slot = 2059091075;
+  private static String label = "WALLET-000";
+  private static long slot = 0;
   private static String pin = "us3rs3cur3";
   private static String addr = "0x47374Ed3355101C178777F945DBB409a60863e8E";
 

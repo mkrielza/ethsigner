@@ -86,6 +86,7 @@ public final class EthSigner {
       runner.start();
     } catch (final Throwable t) {
       vertx.close();
+      transactionSignerProvider.shutdown();
       throw new InitializationException("Failed to create http service.", t);
     }
   }
