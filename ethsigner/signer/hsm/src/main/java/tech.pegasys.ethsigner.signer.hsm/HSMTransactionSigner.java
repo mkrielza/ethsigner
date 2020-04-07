@@ -19,12 +19,13 @@ import org.web3j.crypto.Hash;
 
 public class HSMTransactionSigner implements TransactionSigner {
 
-  // private static final Logger LOG = LogManager.getLogger();
-
+  private final HSMCrypto crypto;
   private final HSMWallet wallet;
   private final String address;
 
-  public HSMTransactionSigner(final HSMWallet wallet, String address) {
+  public HSMTransactionSigner(
+      final HSMCrypto crypto, final HSMWallet wallet, final String address) {
+    this.crypto = crypto;
     this.wallet = wallet;
     this.address = address;
   }
@@ -38,5 +39,11 @@ public class HSMTransactionSigner implements TransactionSigner {
   @Override
   public String getAddress() {
     return address;
+  }
+
+  @Override
+  public void shutdown() {
+    wallet.close();
+    crypto.shutdown();
   }
 }

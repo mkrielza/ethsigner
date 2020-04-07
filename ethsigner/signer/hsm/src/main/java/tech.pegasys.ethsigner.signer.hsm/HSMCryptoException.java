@@ -10,13 +10,14 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.ethsigner.core.signing;
+package tech.pegasys.ethsigner.signer.hsm;
 
-public interface TransactionSigner {
+public class HSMCryptoException extends RuntimeException {
+  public HSMCryptoException(final String message) {
+    super(message);
+  }
 
-  Signature sign(final byte[] data);
-
-  String getAddress();
-
-  default void shutdown() {}
+  public HSMCryptoException(final String message, final Throwable e) {
+    super(message, e);
+  }
 }

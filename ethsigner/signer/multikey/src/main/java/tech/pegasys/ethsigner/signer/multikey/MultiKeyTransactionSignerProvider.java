@@ -109,7 +109,7 @@ public class MultiKeyTransactionSignerProvider
   @Override
   public TransactionSigner createSigner(final HSMSigningMetadataFile metadataFile) {
     final TransactionSigner signer;
-    if (!metadataFile.getConfig().getSlotIndex().equals(hsmFactory.getSlotIndex())) {
+    if (!metadataFile.getConfig().getSlotIndex().equals(hsmFactory.getSlotLabel())) {
       LOG.error(
           "Failed to construct HSM signer for slot " + metadataFile.getConfig().getSlotIndex());
       return null;

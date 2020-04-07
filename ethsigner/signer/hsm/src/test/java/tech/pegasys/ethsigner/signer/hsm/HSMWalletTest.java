@@ -13,23 +13,22 @@
 package tech.pegasys.ethsigner.signer.hsm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import tech.pegasys.ethsigner.core.signing.Signature;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.util.List;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.web3j.crypto.Hash;
 
 public class HSMWalletTest {
 
-  private static final Logger LOG = LogManager.getLogger();
-
   private static HSMCrypto c;
   private static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
-  private static long slot = 2059091075;
+  private static String slot = "WALLET-001";
   private static String pin = "us3rs3cur3";
 
   @BeforeAll
@@ -44,54 +43,81 @@ public class HSMWalletTest {
   }
 
   @Test
+  public void open() {
+    HSMWallet w = new HSMWallet(c, slot);
+    assertDoesNotThrow(() -> w.open(pin));
+    assertDoesNotThrow(() -> w.close());
+    assertThrows(HSMCryptoException.class, () -> w.open(pin + "101"));
+    HSMWallet v = new HSMWallet(c, slot + "101");
+    assertThrows(HSMCryptoException.class, () -> v.open(pin));
+  }
+
+  @Test
+  public void status() {
+    HSMWallet w = new HSMWallet(c, slot);
+    w.open(pin);
+    assertThat(w.getStatus()).isEqualTo("Open");
+    w.close();
+    assertThat(w.getStatus()).isEqualTo("Closed");
+  }
+
+  @Test
+  public void label() {
+    HSMWallet w = new HSMWallet(c, slot);
+    assertThat(w.getLabel()).isEqualTo(slot);
+  }
+
+  @Test
   public void generate() {
-    try {
-      HSMWallet w = new HSMWallet(c, slot, "");
-      boolean opened = w.open(pin);
-      LOG.info("Opened: " + opened);
-      String address = w.generate();
-      LOG.info("Address: " + address);
-      boolean contains = w.contains(address);
-      LOG.info("Contains: " + contains);
-      boolean closed = w.close();
-      LOG.info("Closed: " + closed);
-    } catch (Exception ex) {
-      LOG.error(ex);
-    }
+    HSMWallet w = new HSMWallet(c, slot);
+    w.open(pin);
+    String address = w.generate();
+    assertThat(address).isNotNull();
+    w.close();
+    assertThrows(HSMCryptoException.class, () -> w.generate());
+  }
+
+  @Test
+  public void contains() {
+    HSMWallet w = new HSMWallet(c, slot);
+    w.open(pin);
+    String address = w.generate();
+    assertThat(w.contains(address)).isTrue();
+    w.close();
+    assertThat(w.contains(address)).isFalse();
+  }
+
+  @Test
+  public void list() {
+    HSMWallet w = new HSMWallet(c, slot);
+    w.open(pin);
+    String address = w.generate();
+    List<String> addresses = w.getAddresses();
+    assertThat(addresses).isNotEmpty();
+    assertThat(addresses).contains(address);
+    w.close();
+    assertThat(w.getAddresses()).isEmpty();
+  }
+
+  @Test
+  public void clear() {
+    HSMWallet w = new HSMWallet(c, slot);
+    w.open(pin);
+    w.generate();
+    assertDoesNotThrow(() -> w.clear());
+    assertThat(w.getAddresses()).isEmpty();
+    w.generate();
+    w.close();
   }
 
   @Test
   public void sign() {
     final byte[] data = {1, 2, 3};
-    final byte[] hash = Hash.sha3(data);
-    try {
-      HSMWallet w = new HSMWallet(c, slot, "");
-      boolean opened = w.open(pin);
-      LOG.info("Opened: " + opened);
-      String address = w.generate();
-      assertThat(address).isNotNull();
-      LOG.info("Address: " + address);
-      Signature sig = w.sign(hash, address);
-      assertThat(sig).isNotNull();
-      boolean closed = w.close();
-      LOG.info("Closed: " + closed);
-    } catch (Exception ex) {
-      LOG.error(ex);
-    }
-  }
-
-  @Test
-  public void clear() {
-    try {
-      HSMWallet w = new HSMWallet(c, slot, "");
-      boolean opened = w.open(pin);
-      LOG.info("Opened: " + opened);
-      boolean cleared = w.clear();
-      LOG.info("Cleared: " + cleared);
-      boolean closed = w.close();
-      LOG.info("Closed: " + closed);
-    } catch (Exception ex) {
-      LOG.error(ex);
-    }
+    HSMWallet w = new HSMWallet(c, slot);
+    w.open(pin);
+    String address = w.generate();
+    Signature sig = w.sign(data, address);
+    assertThat(sig).isNotNull();
+    w.close();
   }
 }

@@ -16,23 +16,15 @@ import tech.pegasys.ethsigner.core.signing.Signature;
 
 import java.util.List;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 public class HSMWallet {
 
-  private static final Logger LOG = LogManager.getLogger();
-
   private final HSMCrypto crypto;
-  private final long slotIndex;
   private final String slotLabel;
-  // private final boolean bip32;
+  private long slotIndex;
 
-  public HSMWallet(HSMCrypto crypto, long slotIndex, String slotLabel) {
+  public HSMWallet(HSMCrypto crypto, String slotLabel) {
     this.crypto = crypto;
-    this.slotIndex = slotIndex;
     this.slotLabel = slotLabel;
-    // this.bip32 = bip32;
   }
 
   public String getStatus() {
@@ -44,22 +36,15 @@ public class HSMWallet {
     return slotLabel;
   }
 
-  public boolean open(String slotPin) {
-    if (slotPin.isEmpty()) {
-      LOG.error("HSM Pin is needed");
-      return false;
-    }
-    return crypto.login(slotIndex, slotPin);
-    // if (bip32)
-    // crypto.DeriveBIP32MasterKeys(slotIndex); // Derive the BIP32 master seed and master key pair
-    // in the HSM.
+  public void open(String slotPin) {
+    slotIndex = crypto.getSlotIndex(this.slotLabel);
+    crypto.login(slotIndex, slotPin);
   }
 
-  public boolean close() {
+  public void close() {
     if (crypto.isLoggedIn(slotIndex)) {
-      return crypto.logout(slotIndex);
+      crypto.logout(slotIndex);
     }
-    return false;
   }
 
   public List<String> getAddresses() {
@@ -70,13 +55,11 @@ public class HSMWallet {
     return crypto.containsAddress(slotIndex, address);
   }
 
-  public boolean clear() {
-    boolean result = true;
+  public void clear() {
     List<String> addresses = crypto.getAddresses(slotIndex);
     for (String address : addresses) {
-      result = result && crypto.deleteECKeyPair(slotIndex, address);
+      crypto.deleteECKeyPair(slotIndex, address);
     }
-    return result;
   }
 
   public String generate() {

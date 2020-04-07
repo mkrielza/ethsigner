@@ -45,4 +45,7 @@ public class SingleTransactionSignerProvider implements TransactionSignerProvide
       return Collections.emptySet();
     }
   }
+
+  @Override
+  public void shutdown() {}
 }

@@ -19,15 +19,15 @@ public class HSMTransactionSignerFactory {
   private final HSMCrypto crypto;
   private final HSMWallet wallet;
 
-  private final long slotIndex;
+  private final String slotLabel;
   private final String slotPin;
   private boolean initialized = false;
 
-  public HSMTransactionSignerFactory(String library, String slotIndex, String slotPin) {
-    this.slotIndex = Long.parseLong(slotIndex);
+  public HSMTransactionSignerFactory(String library, String slotLabel, String slotPin) {
+    this.slotLabel = slotLabel;
     this.slotPin = slotPin;
     crypto = new HSMCrypto(library);
-    wallet = new HSMWallet(this.crypto, this.slotIndex, "");
+    wallet = new HSMWallet(this.crypto, this.slotLabel);
   }
 
   public void initialize() {
@@ -46,12 +46,12 @@ public class HSMTransactionSignerFactory {
     return wallet;
   }
 
-  public String getSlotIndex() {
-    return Long.toString(slotIndex);
+  public String getSlotLabel() {
+    return slotLabel;
   }
 
   public TransactionSigner createSigner(String address) {
     if (!initialized) initialize();
-    return new HSMTransactionSigner(wallet, address);
+    return new HSMTransactionSigner(crypto, wallet, address);
   }
 }

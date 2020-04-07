@@ -20,10 +20,10 @@ import picocli.CommandLine;
 
 public class HSMSubCommandTest {
 
-  private static final String LIBRARY = "/this/is/the/path/to/the/library/library.so";
-  private static final String SLOT = "slot";
-  private static final String PIN = "pin";
-  private static final String ADDRESS = "0x";
+  private static final String library = "/this/is/the/path/to/the/library/library.so";
+  private static final String slot = "slot";
+  private static final String pin = "pin";
+  private static final String address = "0x";
 
   private HSMSubCommand config;
 
@@ -43,13 +43,13 @@ public class HSMSubCommandTest {
 
   private String validCommandLine() {
     return "--library="
-        + LIBRARY
-        + " --slot-index="
-        + SLOT
+        + library
+        + " --slot-label="
+        + slot
         + " --slot-pin="
-        + PIN
+        + pin
         + " --eth-address="
-        + ADDRESS;
+        + address;
   }
 
   private String removeFieldFrom(final String input, final String fieldname) {
@@ -61,15 +61,15 @@ public class HSMSubCommandTest {
     final boolean result = parseCommand(validCommandLine());
 
     assertThat(result).isTrue();
-    assertThat(config.toString()).contains(LIBRARY);
-    assertThat(config.toString()).contains(SLOT);
-    assertThat(config.toString()).contains(ADDRESS);
+    assertThat(config.toString()).contains(library);
+    assertThat(config.toString()).contains(slot);
+    assertThat(config.toString()).contains(address);
   }
 
   @Test
   public void missingRequiredParamShowsAppropriateError() {
     missingParameterShowsError("library");
-    missingParameterShowsError("slot-index");
+    missingParameterShowsError("slot-label");
     missingParameterShowsError("slot-pin");
     missingParameterShowsError("eth-address");
   }

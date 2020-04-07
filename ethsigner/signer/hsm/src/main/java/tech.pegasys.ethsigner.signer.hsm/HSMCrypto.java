@@ -57,6 +57,7 @@ public class HSMCrypto {
 
   private final String library;
   private final Map<Long, Slot> slots;
+  private final Map<String, Long> labels;
   private final Map<Long, Session> sessions;
   private final X9ECParameters params;
   private final ECDomainParameters curve;
@@ -64,101 +65,99 @@ public class HSMCrypto {
   public HSMCrypto(final String library) {
     this.library = library;
     this.slots = new HashMap<>();
+    this.labels = new HashMap<>();
     this.sessions = new HashMap<>();
     this.params = SECNamedCurves.getByName(CURVE);
     this.curve =
         new ECDomainParameters(params.getCurve(), params.getG(), params.getN(), params.getH());
   }
 
+  // initialize gets information on available slots and initialize the crypto module
   public void initialize() {
     try {
       module = Module.getInstance(library);
       module.initialize(null);
-
       Slot[] slotList = module.getSlotList(true);
       for (Slot s : slotList) {
-        LOG.info(s.getSlotID());
-        slots.put(s.getSlotID(), s);
+        long id = s.getSlotID();
+        LOG.debug(id);
+        slots.put(id, s);
+        labels.put(s.getToken().getTokenInfo().getLabel().trim(), id);
       }
-    } catch (Exception ex) {
+    } catch (IOException | TokenException ex) {
       LOG.error(ex);
+      throw new HSMCryptoException("Failed to initialize crypto module.", ex);
     }
   }
 
+  // shutdown will log out all users and finalize the crypto module
   public void shutdown() {
     try {
       for (long slotIndex : slots.keySet()) {
-        if (sessions.get(slotIndex) != null) // && isLoggedIn(slotIndex))
-        logout(slotIndex);
+        if (sessions.get(slotIndex) != null) logout(slotIndex);
       }
       module.finalize(null);
-    } catch (Exception ex) {
+    } catch (TokenException ex) {
       LOG.error(ex);
+      throw new HSMCryptoException("Failed to shutdown crypto module.", ex);
     }
   }
 
-  public boolean login(long slotIndex, String slotPin) {
+  // login will log a user into a slot
+  public void login(long slotIndex, String slotPin) {
+    if (slotPin.isEmpty()) {
+      throw new HSMCryptoException("Invalid pin.");
+    }
     try {
-      Session session = slots.get(slotIndex).getToken().openSession(true, true, null, null);
-      session.login(Session.UserType.USER, slotPin.toCharArray());
-      sessions.put(slotIndex, session);
+      if (slots.containsKey(slotIndex)) {
+        Session session = slots.get(slotIndex).getToken().openSession(true, true, null, null);
+        session.login(Session.UserType.USER, slotPin.toCharArray());
+        sessions.put(slotIndex, session);
+      } else {
+        throw new RuntimeException("Invalid slot index.");
+      }
     } catch (Exception ex) {
       LOG.error(ex);
-      return false;
+      throw new HSMCryptoException("Failed to login to slot.", ex);
     }
-    return true;
   }
 
-  public boolean logout(long slotIndex) {
+  // logout will log a user out of a slot
+  public void logout(long slotIndex) {
     try {
       Session session = sessions.get(slotIndex);
       if (session != null) {
         session.logout();
         session.closeSession();
         sessions.put(slotIndex, null);
+      } else {
+        throw new RuntimeException("Invalid slot index or session not open.");
       }
-    } catch (TokenException ex) {
-      LOG.error(ex);
-      return false;
-    }
-    return true;
-  }
-
-  public Session openSession(long slotIndex) {
-    try {
-      return slots.get(slotIndex).getToken().openSession(true, true, null, null);
     } catch (Exception ex) {
       LOG.error(ex);
-    }
-    return null;
-  }
-
-  public void closeSession(Session session) {
-    try {
-      session.closeSession();
-    } catch (Exception ex) {
-      LOG.error(ex);
+      throw new HSMCryptoException("Failed to logout of slot.", ex);
     }
   }
 
+  // isLoggedIn returns true if a user is currently logged into the slot
   public boolean isLoggedIn(long slotIndex) {
     boolean result = false;
     Session session = openSession(slotIndex);
-    if (session != null)
-      try {
-        SessionInfo si = session.getSessionInfo();
-        result = si.getState().equals(State.RW_USER_FUNCTIONS);
-      } catch (Exception ex) {
-        LOG.error(ex);
-      } finally {
-        closeSession(session);
-      }
+    try {
+      SessionInfo si = session.getSessionInfo();
+      result = si.getState().equals(State.RW_USER_FUNCTIONS);
+    } catch (TokenException ex) {
+      LOG.error(ex);
+      throw new HSMCryptoException("Failed to determine user status.", ex);
+    } finally {
+      closeSession(session);
+    }
     return result;
   }
 
+  // generateECKeyPair generates a new key pair inside the wallet
   public String generateECKeyPair(long slotIndex) {
     String address = null;
-    Session session = openSession(slotIndex);
     byte[] id = timeToBytes();
     // byte[] ecParam  = new byte[]{0x06, 0x05, 0x2B, 0x81, 0x04, 0x00, 0x0A}; // secp256k1
     // ASN1ObjectIdentifier asn1 = SECNamedCurves.getOID(CURVE);
@@ -168,7 +167,7 @@ public class HSMCrypto {
       ecParams = params.getEncoded();
     } catch (IOException ex) {
       LOG.error(ex);
-      throw new RuntimeException("Failed to extract EC parameters.");
+      throw new HSMCryptoException("Failed get EC parameters.", ex);
     }
     ECPrivateKey privateKeyTemplate = new ECPrivateKey();
     privateKeyTemplate.getToken().setBooleanValue(true);
@@ -183,7 +182,8 @@ public class HSMCrypto {
     publicKeyTemplate.getPrivate().setBooleanValue(true);
     publicKeyTemplate.getLabel().setCharArrayValue("EC-public-key".toCharArray());
     publicKeyTemplate.getId().setByteArrayValue(id);
-    KeyPair keyPair = null;
+    KeyPair keyPair;
+    Session session = openSession(slotIndex);
     try {
       keyPair =
           session.generateKeyPair(
@@ -195,69 +195,144 @@ public class HSMCrypto {
       setLabel(session, keyPair.getPublicKey(), address);
     } catch (TokenException ex) {
       LOG.error(ex);
-      throw new RuntimeException("Failed to generate a keypair.");
+      throw new HSMCryptoException("Failed to generate key pair.", ex);
     } finally {
       closeSession(session);
     }
+
     return address;
   }
 
-  public boolean deleteECKeyPair(long slotIndex, String address) {
-    boolean result = true;
+  // deleteECKeyPair deletes a key pair from the wallet
+  public void deleteECKeyPair(long slotIndex, String address) {
     Session session = openSession(slotIndex);
-    if (session != null)
-      try {
-        Key key = new Key();
-        key.getLabel().setCharArrayValue(address.toCharArray());
-        List<PKCS11Object> keys = findObjects(session, key);
-        for (PKCS11Object k : keys) {
-          session.destroyObject(k);
-        }
-      } catch (Exception ex) {
-        LOG.error(ex);
-        result = false;
-      } finally {
-        closeSession(session);
-      }
-    return result;
-  }
-
-  public Signature sign(long slotIndex, byte[] hash, String address) throws RuntimeException {
-    Session session = openSession(slotIndex);
-
-    ECPrivateKey privateKeyHandle = getPrivateKeyHandle(session, address);
-    ECPublicKey publicKeyHandle = getPublicKeyHandle(session, address);
-    byte[] publicKeyBytes = getPublicKey(publicKeyHandle);
-    final BigInteger publicKey = Sign.publicFromPoint(publicKeyBytes);
-
-    byte[] signature;
     try {
-      session.signInit(Mechanism.get(PKCS11Constants.CKM_ECDSA), privateKeyHandle);
-      signature = session.sign(hash);
-
+      Key key = new Key();
+      key.getLabel().setCharArrayValue(address.toCharArray());
+      List<PKCS11Object> keys = findObjects(session, key);
+      if (keys.isEmpty()) throw new RuntimeException("Failed to find key pair.");
+      for (PKCS11Object k : keys) {
+        session.destroyObject(k);
+      }
     } catch (Exception ex) {
       LOG.error(ex);
-      throw new RuntimeException("Failed to produce a valid signature for the hash.");
+      throw new HSMCryptoException("Failed to delete key pair.", ex);
     } finally {
       closeSession(session);
     }
+  }
+
+  // sign returns the transposed signature of the given hash
+  public Signature sign(long slotIndex, byte[] hash, String address) throws HSMCryptoException {
+    Session session = openSession(slotIndex);
+    byte[] signature;
+    BigInteger publicKey;
+    try {
+      ECPrivateKey privateKeyHandle = getPrivateKeyHandle(session, address);
+      if (privateKeyHandle == null)
+        throw new RuntimeException("Failed to retrieve private key handle.");
+      ECPublicKey publicKeyHandle = getPublicKeyHandle(session, address);
+      if (publicKeyHandle == null)
+        throw new RuntimeException("Failed to retrieve public key handle.");
+
+      byte[] publicKeyBytes = getPublicKey(publicKeyHandle);
+      publicKey = Sign.publicFromPoint(publicKeyBytes);
+
+      session.signInit(Mechanism.get(PKCS11Constants.CKM_ECDSA), privateKeyHandle);
+      signature = session.sign(hash);
+    } catch (Exception ex) {
+      LOG.error(ex);
+      throw new HSMCryptoException("Failed to produce a valid signature for the hash.", ex);
+    } finally {
+      closeSession(session);
+    }
+
     ECDSASignature canonicalSignature = null;
     try {
       canonicalSignature = transposeSignatureToLowS(signature);
     } catch (Exception ex) {
       LOG.error(ex);
-      throw new RuntimeException("Failed to transpose signature.");
+      throw new HSMCryptoException("Failed to transpose signature.");
     }
 
     final int recId = recoverKeyIndex(canonicalSignature, hash, publicKey);
     if (recId == -1) {
-      throw new RuntimeException(
+      throw new HSMCryptoException(
           "Failed to construct a recoverable key. Are your credentials valid?");
     }
 
     final int headerByte = recId + 27;
     return new Signature(
         BigInteger.valueOf(headerByte), canonicalSignature.r, canonicalSignature.s);
+  }
+
+  // getAddresses returns all the addresses on the wallet
+  public List<String> getAddresses(long slotIndex) {
+    Session session = openSession(slotIndex);
+    List<String> result = new ArrayList<>();
+    try {
+      PrivateKey key = new PrivateKey();
+      session.findObjectsInit(key);
+      PKCS11Object[] objects = session.findObjects(100);
+      session.findObjectsFinal();
+      for (PKCS11Object object : objects) {
+        String address = object.getAttribute(PKCS11Constants.CKA_LABEL).toString();
+        if (isAddress(address)) {
+          LOG.debug(address);
+          result.add(address);
+        }
+      }
+    } catch (TokenException ex) {
+      LOG.error(ex);
+      throw new HSMCryptoException("Failed to get list of addresses.", ex);
+    } finally {
+      closeSession(session);
+    }
+    return result;
+  }
+
+  public long getSlotIndex(String label) {
+    if (labels.containsKey(label)) return labels.get(label);
+    return -1L;
+  }
+
+  // containsAddress returns true if the wallet contains the given address
+  public boolean containsAddress(long slotIndex, String address) {
+    Session session = openSession(slotIndex);
+    boolean result = false;
+    try {
+      PublicKey key = new PublicKey();
+      key.getLabel().setCharArrayValue(address.toCharArray());
+      result = findObject(session, key) != null;
+    } catch (Exception ex) {
+      LOG.error(ex);
+      throw new HSMCryptoException("Failed to determine if slot contains address.", ex);
+    } finally {
+      closeSession(session);
+    }
+    return result;
+  }
+
+  // openSession opens a new session
+  private Session openSession(long slotIndex) {
+    try {
+      if (slots.containsKey(slotIndex))
+        return slots.get(slotIndex).getToken().openSession(true, true, null, null);
+      else throw new RuntimeException("Invalid slot index: " + slotIndex);
+    } catch (Exception ex) {
+      LOG.error(ex);
+      throw new HSMCryptoException("Failed to open session.", ex);
+    }
+  }
+
+  // closeSession closes a session
+  private void closeSession(Session session) {
+    try {
+      session.closeSession();
+    } catch (TokenException ex) {
+      LOG.error(ex);
+      throw new HSMCryptoException("Failed to close session.", ex);
+    }
   }
 
   // transposeSignatureToLowS ensures that the signature has a low S value as Ethereum requires.
@@ -271,6 +346,7 @@ public class HSMCrypto {
     return canonicalSignature;
   }
 
+  // timeToBytes returns the current unix time as a byte array
   private byte[] timeToBytes() {
     long l = Instant.now().getEpochSecond();
     byte[] result = new byte[8];
@@ -286,15 +362,10 @@ public class HSMCrypto {
     return publicKey.getEcPoint().getByteArrayValue();
   }
 
-  // getDecodedECPoint decodes the CKA_EC_POINT and removes the DER encoding.
+  // getDecodedECPoint decodes the CKA_EC_POINT and removes the DER encoding
   private byte[] getDecodedECPoint(ECPublicKey publicKey) {
-    try {
-      byte[] encodedPoint = DEROctetString.getInstance(getECPoint(publicKey)).getOctets();
-      return curve.getCurve().decodePoint(encodedPoint).getEncoded(false);
-    } catch (Exception ex) {
-      LOG.error(ex);
-    }
-    return null;
+    byte[] encodedPoint = DEROctetString.getInstance(getECPoint(publicKey)).getOctets();
+    return curve.getCurve().decodePoint(encodedPoint).getEncoded(false);
   }
 
   // getPublicKey returns the raw decoded public key.
@@ -302,36 +373,25 @@ public class HSMCrypto {
     return getDecodedECPoint(publicKey);
   }
 
+  // getAddress derives the address from a raw decoded public key
   private String getAddress(ECPublicKey publicKey) {
     byte[] publicKeyBytes = getPublicKey(publicKey);
     return Keys.toChecksumAddress(Keys.getAddress(Sign.publicFromPoint(publicKeyBytes)));
   }
 
+  // isAddress checks whether or not a Ethereum address is valid
   private boolean isAddress(String address) {
     return address.matches("^(0x){1}[0-9a-fA-F]{40}$");
   }
 
-  public String getLabel(Session session, Key objectHandle) {
-    try {
-      Key obj = (Key) session.getAttributeValues(objectHandle);
-      return obj.getLabel().toString();
-    } catch (TokenException ex) {
-      LOG.error(ex);
-    }
-    return null;
+  // setLabel updates the label in the token associated to the given object handle
+  private void setLabel(Session session, Key objectHandle, String label) throws TokenException {
+    Key obj = new Key();
+    obj.getLabel().setCharArrayValue(label.toCharArray());
+    session.setAttributeValues(objectHandle, obj);
   }
 
-  private void setLabel(Session session, Key objectHandle, String label) {
-    try {
-      Key obj = new Key();
-      obj.getLabel().setCharArrayValue(label.toCharArray());
-      session.setAttributeValues(objectHandle, obj);
-    } catch (TokenException ex) {
-      LOG.error(ex);
-    }
-  }
-
-  // recoverKeyIndex works backwards to figure out the recId needed to recover the signature.
+  // recoverKeyIndex works backwards to figure out the recId needed to recover the signature
   private int recoverKeyIndex(final ECDSASignature sig, final byte[] hash, BigInteger publicKey) {
     for (int i = 0; i < 4; i++) {
       final BigInteger k = Sign.recoverFromSignature(i, sig, hash);
@@ -342,83 +402,39 @@ public class HSMCrypto {
     return -1;
   }
 
-  private PKCS11Object findObject(Session session, PKCS11Object key) {
-    PKCS11Object[] objects;
-    try {
-      session.findObjectsInit(key);
-      objects = session.findObjects(1);
-      session.findObjectsFinal();
-      if (objects.length > 0) {
-        return objects[0];
-      }
-    } catch (TokenException ex) {
-      LOG.error(ex);
+  // findObject returns the first match of the given template
+  private PKCS11Object findObject(Session session, PKCS11Object template) throws TokenException {
+    session.findObjectsInit(template);
+    PKCS11Object[] objects = session.findObjects(1);
+    session.findObjectsFinal();
+    if (objects.length > 0) {
+      return objects[0];
     }
     return null;
   }
 
-  private List<PKCS11Object> findObjects(Session session, PKCS11Object key) {
+  // findObjects returns all the matches to the given template
+  private List<PKCS11Object> findObjects(Session session, PKCS11Object template)
+      throws TokenException {
     List<PKCS11Object> result = new ArrayList<>();
-    PKCS11Object[] objects;
-    try {
-      session.findObjectsInit(key);
-      objects = session.findObjects(1000);
-      session.findObjectsFinal();
-      result.addAll(Arrays.asList(objects));
-    } catch (TokenException ex) {
-      LOG.error(ex);
-    }
+    session.findObjectsInit(template);
+    PKCS11Object[] objects = session.findObjects(1000);
+    session.findObjectsFinal();
+    result.addAll(Arrays.asList(objects));
     return result;
   }
 
-  private ECPrivateKey getPrivateKeyHandle(Session session, String address) {
+  // getPrivateKeyHandle returns the private key handle for the given address
+  private ECPrivateKey getPrivateKeyHandle(Session session, String address) throws TokenException {
     PrivateKey key = new PrivateKey();
     key.getLabel().setCharArrayValue(address.toCharArray());
     return (ECPrivateKey) findObject(session, key);
   }
 
-  private ECPublicKey getPublicKeyHandle(Session session, String address) {
+  // getPublicKeyHandle returns the public key handle for the given address
+  private ECPublicKey getPublicKeyHandle(Session session, String address) throws TokenException {
     PublicKey key = new PublicKey();
     key.getLabel().setCharArrayValue(address.toCharArray());
     return (ECPublicKey) findObject(session, key);
-  }
-
-  public List<String> getAddresses(long slotIndex) {
-    Session session = openSession(slotIndex);
-    List<String> result = new ArrayList<>();
-    try {
-      PrivateKey key = new PrivateKey();
-      session.findObjectsInit(key);
-      PKCS11Object[] objects = session.findObjects(100);
-      session.findObjectsFinal();
-
-      for (PKCS11Object object : objects) {
-        String address = object.getAttribute(PKCS11Constants.CKA_LABEL).toString();
-        if (isAddress(address)) {
-          LOG.info(address);
-          result.add(address);
-        }
-      }
-    } catch (Exception ex) {
-      LOG.error(ex);
-    } finally {
-      closeSession(session);
-    }
-    return result;
-  }
-
-  public boolean containsAddress(long slotIndex, String address) {
-    Session session = openSession(slotIndex);
-    boolean result = false;
-    try {
-      PublicKey key = new PublicKey();
-      key.getLabel().setCharArrayValue(address.toCharArray());
-      result = findObject(session, key) != null;
-    } catch (Exception ex) {
-      LOG.error(ex);
-    } finally {
-      closeSession(session);
-    }
-    return result;
   }
 }
