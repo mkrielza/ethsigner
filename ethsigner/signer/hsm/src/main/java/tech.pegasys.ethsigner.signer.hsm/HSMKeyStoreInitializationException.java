@@ -13,19 +13,8 @@
 package tech.pegasys.ethsigner.signer.hsm;
 
 public class HSMKeyStoreInitializationException extends RuntimeException {
-  public HSMKeyStoreInitializationException() {
-    super();
-  }
-
-  public HSMKeyStoreInitializationException(final String message) {
-    super(message);
-  }
 
   public HSMKeyStoreInitializationException(final String message, final Throwable e) {
     super(message, e);
-  }
-
-  public HSMKeyStoreInitializationException(final Throwable e) {
-    super(e);
   }
 }

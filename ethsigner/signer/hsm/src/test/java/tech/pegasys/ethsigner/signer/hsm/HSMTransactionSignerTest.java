@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 public class HSMTransactionSignerTest {
 
   private static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
-  private static String slot = "WALLET-001";
+  private static String slot = "WALLET-003";
   private static String pin = "us3rs3cur3";
   private static String address;
   private static byte[] data = {1, 2, 3};
