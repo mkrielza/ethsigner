@@ -16,41 +16,41 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HSMConfig {
   private final String address;
-  private final String slotIndex;
+  private final String slot;
 
-  public HSMConfig(final String address, final String slotIndex) {
+  public HSMConfig(final String address, final String slot) {
 
     this.address = address;
-    this.slotIndex = slotIndex;
+    this.slot = slot;
   }
 
   public String getAddress() {
     return address;
   }
 
-  public String getSlotIndex() {
-    return slotIndex;
+  public String getSlot() {
+    return slot;
   }
 
   public static class HSMConfigBuilder {
     private String address;
-    private String slotIndex;
+    private String slot;
 
     public HSMConfigBuilder withAddress(final String keyName) {
       this.address = keyName;
       return this;
     }
 
-    public HSMConfigBuilder withSlotIndex(final String keyVersion) {
-      this.slotIndex = keyVersion;
+    public HSMConfigBuilder withSlot(final String keyVersion) {
+      this.slot = keyVersion;
       return this;
     }
 
     public HSMConfig build() {
       checkNotNull(address, "Address was not set.");
-      checkNotNull(slotIndex, "Slot index was not set.");
+      checkNotNull(slot, "Slot was not set.");
 
-      return new HSMConfig(address, slotIndex);
+      return new HSMConfig(address, slot);
     }
   }
 }
