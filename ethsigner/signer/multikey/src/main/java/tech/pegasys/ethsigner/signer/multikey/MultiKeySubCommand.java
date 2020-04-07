@@ -20,7 +20,6 @@ import tech.pegasys.ethsigner.core.signing.TransactionSignerProvider;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultAuthenticator;
 import tech.pegasys.ethsigner.signer.azure.AzureKeyVaultTransactionSignerFactory;
 import tech.pegasys.ethsigner.signer.hashicorp.HashicorpSignerFactory;
-import tech.pegasys.ethsigner.signer.hsm.HSMKeyStoreProvider;
 import tech.pegasys.ethsigner.signer.hsm.HSMTransactionSignerFactory;
 
 import java.nio.file.Path;
@@ -70,11 +69,11 @@ public class MultiKeySubCommand extends SignerSubCommand {
   private Path libraryPath;
 
   @Option(
-      names = {"-s", "--slot-index"},
+      names = {"-s", "--slot-label"},
       description = "The HSM slot used to sign transactions.",
-      paramLabel = "<SLOT_INDEX>",
+      paramLabel = "<SLOT_LABEL>",
       required = false)
-  private String slotIndex;
+  private String slotLabel;
 
   @Option(
       names = {"-p", "--slot-pin"},
@@ -95,9 +94,7 @@ public class MultiKeySubCommand extends SignerSubCommand {
     final HashicorpSignerFactory hashicorpSignerFactory = new HashicorpSignerFactory(Vertx.vertx());
 
     final HSMTransactionSignerFactory hsmFactory =
-        new HSMTransactionSignerFactory(
-            new HSMKeyStoreProvider(
-                libraryPath != null ? libraryPath.toString() : null, slotIndex, slotPin));
+        new HSMTransactionSignerFactory(libraryPath.toString(), slotLabel, slotPin);
 
     return new MultiKeyTransactionSignerProvider(
         signingMetadataTomlConfigLoader, azureFactory, hashicorpSignerFactory, hsmFactory);

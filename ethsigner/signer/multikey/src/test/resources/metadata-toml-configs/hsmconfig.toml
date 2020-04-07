@@ -5,4 +5,4 @@ description = "Example of HSM based configuration"
 [signing]
 type = "hsm-signer"
 address = "0x34a93e9b0AE1B808a83bAEe179264EFc6774C315"
-slotIndex = "992881475"
+slot = "992881475"

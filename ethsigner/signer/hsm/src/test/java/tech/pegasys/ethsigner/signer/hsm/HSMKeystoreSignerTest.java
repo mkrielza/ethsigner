@@ -13,40 +13,27 @@
 package tech.pegasys.ethsigner.signer.hsm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 
-import tech.pegasys.ethsigner.core.signing.Signature;
 import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-public class HSMTransactionSignerTest {
+public class HSMKeystoreSignerTest {
 
-  private static String library = "/usr/local/lib/softhsm/libsofthsm2.so";
-  private static String slot = "WALLET-001";
-  private static String pin = "us3rs3cur3";
-  private static String address;
-  private static byte[] data = {1, 2, 3};
-
-  private static TransactionSigner signer;
+  private static HSMKeyStoreProvider ksp;
 
   @BeforeAll
-  public static void beforeAll() {
-    HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(library, slot, pin);
-    factory.initialize();
-    address = factory.getWallet().generate();
-    signer = factory.createSigner(address);
-  }
-
-  @AfterAll
-  public static void afterAll() {
-    signer.shutdown();
+  public static void createProvider() {
+    ksp = mock(HSMKeyStoreProvider.class);
   }
 
   @Test
   public void success() {
-    Signature sig = signer.sign(data);
-    assertThat(sig).isNotNull();
+    final TransactionSigner signer = (new HSMKeystoreSignerFactory(ksp)).createSigner("0x");
+
+    assertThat(signer).isNotNull();
+    assertThat(signer.getAddress()).isNotEmpty();
   }
 }

@@ -50,11 +50,11 @@ public class HSMSubCommand extends SignerSubCommand {
   private Path libraryPath;
 
   @Option(
-      names = {"-s", "--slot-index"},
+      names = {"-s", "--slot-label"},
       description = "The HSM slot used to sign transactions.",
-      paramLabel = "<SLOT_INDEX>",
+      paramLabel = "<SLOT_LABEL>",
       required = true)
-  private String slotIndex;
+  private String slotLabel;
 
   @Option(
       names = {"-p", "--slot-pin"},
@@ -71,9 +71,8 @@ public class HSMSubCommand extends SignerSubCommand {
   private String ethAddress;
 
   private TransactionSigner createSigner() throws TransactionSignerInitializationException {
-    final HSMKeyStoreProvider provider =
-        new HSMKeyStoreProvider(libraryPath.toString(), slotIndex, slotPin);
-    final HSMTransactionSignerFactory factory = new HSMTransactionSignerFactory(provider);
+    HSMTransactionSignerFactory factory =
+        new HSMTransactionSignerFactory(libraryPath.toString(), slotLabel, slotPin);
     return factory.createSigner(ethAddress);
   }
 
@@ -92,7 +91,7 @@ public class HSMSubCommand extends SignerSubCommand {
   public String toString() {
     return MoreObjects.toStringHelper(this)
         .add("library", libraryPath)
-        .add("slot", slotIndex)
+        .add("slot", slotLabel)
         .add("address", ethAddress)
         .toString();
   }

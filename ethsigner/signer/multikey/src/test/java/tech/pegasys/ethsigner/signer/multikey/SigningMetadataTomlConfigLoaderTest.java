@@ -290,7 +290,7 @@ class SigningMetadataTomlConfigLoaderTest {
 
     assertThat(metadataFile.getConfig().getAddress())
         .isEqualTo("0x34a93e9b0AE1B808a83bAEe179264EFc6774C315");
-    assertThat(metadataFile.getConfig().getSlotIndex()).isEqualTo("992881475");
+    assertThat(metadataFile.getConfig().getSlot()).isEqualTo("992881475");
   }
 
   @Test

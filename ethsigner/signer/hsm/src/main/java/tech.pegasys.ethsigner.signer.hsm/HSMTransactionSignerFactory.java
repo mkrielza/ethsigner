@@ -16,17 +16,42 @@ import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
 public class HSMTransactionSignerFactory {
 
-  private final HSMKeyStoreProvider provider;
+  private final HSMCrypto crypto;
+  private final HSMWallet wallet;
 
-  public HSMTransactionSignerFactory(final HSMKeyStoreProvider provider) {
-    this.provider = provider;
+  private final String slotLabel;
+  private final String slotPin;
+  private boolean initialized = false;
+
+  public HSMTransactionSignerFactory(String library, String slotLabel, String slotPin) {
+    this.slotLabel = slotLabel;
+    this.slotPin = slotPin;
+    crypto = new HSMCrypto(library);
+    wallet = new HSMWallet(this.crypto, this.slotLabel);
+  }
+
+  public void initialize() {
+    crypto.initialize();
+    wallet.open(slotPin);
+    initialized = true;
+  }
+
+  public void shutdown() {
+    wallet.close();
+    crypto.shutdown();
+    initialized = false;
+  }
+
+  public HSMWallet getWallet() {
+    return wallet;
+  }
+
+  public String getSlotLabel() {
+    return slotLabel;
   }
 
   public TransactionSigner createSigner(String address) {
-    return new HSMTransactionSigner(provider, address);
-  }
-
-  public String getSlotIndex() {
-    return provider.getSlotIndex();
+    if (!initialized) initialize();
+    return new HSMTransactionSigner(crypto, wallet, address);
   }
 }

@@ -10,13 +10,23 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package tech.pegasys.ethsigner.core.signing;
+package tech.pegasys.ethsigner.signer.hsm;
 
-public interface TransactionSigner {
+import tech.pegasys.ethsigner.core.signing.TransactionSigner;
 
-  Signature sign(final byte[] data);
+public class HSMKeystoreSignerFactory {
 
-  String getAddress();
+  private final HSMKeyStoreProvider provider;
 
-  default void shutdown() {}
+  public HSMKeystoreSignerFactory(final HSMKeyStoreProvider provider) {
+    this.provider = provider;
+  }
+
+  public TransactionSigner createSigner(String address) {
+    return new HSMKeystoreSigner(provider, address);
+  }
+
+  public String getSlotIndex() {
+    return provider.getSlotIndex();
+  }
 }

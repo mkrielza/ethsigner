@@ -181,7 +181,7 @@ class SigningMetadataTomlConfigLoader {
     final TomlTableAdapter table = signingTable.get();
     builder = new HSMConfig.HSMConfigBuilder();
     builder.withAddress(table.getString("address"));
-    builder.withSlotIndex(table.getString("slotIndex"));
+    builder.withSlot(table.getString("slot"));
     return Optional.of(new HSMSigningMetadataFile(filename, builder.build()));
   }
 
